@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `https://api.foursquare.com/v3/places/search?${searchParams.toString()}`,
       {
         headers: {
-          Authorization: apiKey,
+          Authorization: `fsq ${apiKey}`,
           Accept: 'application/json',
         },
       },
