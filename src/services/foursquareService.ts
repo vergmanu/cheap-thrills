@@ -1,5 +1,3 @@
-// TODO: consider a backend proxy to protect the API key in production
-
 import type {
   HappyHourQuery,
   HappyHourServiceInterface,
@@ -9,9 +7,7 @@ import type {
 } from '../types/venue';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { isHappyHourActive } from '../utils/timeUtils';
-import { milesToMeters } from '../utils/distanceUtils';
-
-const SEARCH_URL = 'https://api.foursquare.com/v3/places/search';
+const PROXY_URL = '/api/foursquare';
 const BAR_CATEGORY_ID = 13003;
 const RESTAURANT_CATEGORY_ID = 13065;
 
@@ -61,14 +57,6 @@ interface ParsedHourEntry {
   dayShort: string;
   startTime: string;
   endTime: string;
-}
-
-function getApiKey(): string {
-  const key = import.meta.env.VITE_FOURSQUARE_API_KEY;
-  if (!key) {
-    throw new Error('Foursquare API is not configured');
-  }
-  return key;
 }
 
 function getConfig() {
@@ -196,25 +184,19 @@ export class FoursquareService implements HappyHourServiceInterface {
     query: HappyHourQuery,
     options?: HappyHourServiceOptions,
   ): Promise<Venue[]> {
-    const { radiusMiles, maxResults } = getConfig();
-    const radiusMeters = milesToMeters(query.radiusMiles ?? radiusMiles);
+    const { radiusMiles } = getConfig();
+    const radius = query.radiusMiles ?? radiusMiles;
 
     const params = new URLSearchParams({
-      query: 'happy hour',
-      near: query.zipCode,
-      categories: `${BAR_CATEGORY_ID},${RESTAURANT_CATEGORY_ID}`,
-      limit: String(maxResults),
-      fields:
-        'fsq_id,name,location,distance,rating,tel,website,hours,categories',
-      radius: String(radiusMeters),
+      zipCode: query.zipCode,
+      radius: String(radius),
     });
 
     const response = await fetchWithTimeout(
-      `${SEARCH_URL}?${params.toString()}`,
+      `${PROXY_URL}?${params.toString()}`,
       {
         signal: options?.signal,
         headers: {
-          Authorization: getApiKey(),
           Accept: 'application/json',
         },
       },
