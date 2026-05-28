@@ -7,7 +7,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Zip code is required' });
   }
 
-  const apiKey = process.env.VITE_FOURSQUARE_API_KEY;
+  const apiKey = process.env.FOURSQUARE_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'Foursquare API is not configured' });
   }
