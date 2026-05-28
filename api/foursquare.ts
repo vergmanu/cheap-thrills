@@ -82,10 +82,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Step 2: Search Foursquare using city string
     const response = await fetch(
-      `https://api.foursquare.com/v3/places/search?query=happy+hour&near=${encodeURIComponent(location)}&categories=13003,13065&limit=${limit}&fields=fsq_id,name,location,distance,rating,tel,website,hours,categories`,
+      `https://places-api.foursquare.com/places/search?query=happy+hour&near=${encodeURIComponent(location)}&categories=13003,13065&limit=${limit}&fields=fsq_id,name,location,distance,rating,tel,website,hours,categories`,
       {
         headers: {
-          Authorization: `fsq ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
+          'X-Places-Api-Version': '2025-06-17',
           Accept: 'application/json',
         },
       }
