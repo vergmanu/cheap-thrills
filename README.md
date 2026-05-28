@@ -28,7 +28,8 @@ cp .env.example .env
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_FOURSQUARE_API_KEY` | Foursquare Places API key (production) |
+| `FOURSQUARE_API_KEY` | Foursquare API key for `/api/foursquare` (recommended on Vercel) |
+| `VITE_FOURSQUARE_API_KEY` | Legacy/alternate name (also supported by the API route) |
 | `VITE_SEARCH_RADIUS_MILES` | Search radius in miles (default: `5`) |
 | `VITE_MAX_RESULTS` | Max venues to return (default: `20`) |
 
@@ -40,8 +41,9 @@ To use Foursquare in production:
 
 1. Create a developer account at [Foursquare Developers](https://foursquare.com/developers).
 2. Create a new app and generate an **API key** (no credit card required).
-3. Copy `.env.example` to `.env` and set `VITE_FOURSQUARE_API_KEY`.
-4. Build and preview production mode:
+3. Copy `.env.example` to `.env` and set `FOURSQUARE_API_KEY` (key only — **no** `fsq ` prefix).
+4. In **Vercel → Project → Settings → Environment Variables**, add the same variable for **Production** (and Preview if you use preview deployments), then redeploy.
+5. Build and preview production mode:
 
 ```bash
 pnpm build
