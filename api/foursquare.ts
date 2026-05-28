@@ -8,6 +8,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.VITE_FOURSQUARE_API_KEY;
+  console.log(
+    'API Key preview:',
+    apiKey?.slice(0, 8),
+    '| Length:',
+    apiKey?.length,
+  );
   if (!apiKey) {
     return res.status(500).json({ error: 'Foursquare API is not configured' });
   }
@@ -35,8 +41,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         headers: {
           Authorization: `fsq ${apiKey}`,
           Accept: 'application/json',
-      
-      },
+        },
     );
 
     if (!response.ok) {
