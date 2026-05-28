@@ -28,36 +28,31 @@ cp .env.example .env
 
 | Variable | Description |
 |----------|-------------|
-| `VITE_GOOGLE_PLACES_API_KEY` | Google Places API key (production) |
+| `VITE_FOURSQUARE_API_KEY` | Foursquare Places API key (production) |
 | `VITE_SEARCH_RADIUS_MILES` | Search radius in miles (default: `5`) |
 | `VITE_MAX_RESULTS` | Max venues to return (default: `20`) |
 
-## Google Places API
+## Foursquare Places API
 
 By default, `createHappyHourService()` returns the **mock service** when `import.meta.env.DEV` is `true`.
 
-To use Google Places in production:
+To use Foursquare in production:
 
-1. Open [Google Cloud Console](https://console.cloud.google.com) and create a project (or select an existing one).
-2. Enable these APIs for the project:
-   - **Places API**
-   - **Geocoding API**
-3. Go to **APIs & Services → Credentials**, create an **API key**, and restrict it:
-   - **Application restrictions:** HTTP referrers (add your production domain, e.g. `https://yourdomain.com/*`)
-   - **API restrictions:** limit to Places API and Geocoding API only
-4. Copy `.env.example` to `.env` and set `VITE_GOOGLE_PLACES_API_KEY`.
-5. Build and preview production mode:
+1. Create a developer account at [Foursquare Developers](https://foursquare.com/developers).
+2. Create a new app and generate an **API key** (no credit card required).
+3. Copy `.env.example` to `.env` and set `VITE_FOURSQUARE_API_KEY`.
+4. Build and preview production mode:
 
 ```bash
 pnpm build
 pnpm preview
 ```
 
-Google requires a credit card on file but includes **$200/month in free credit**, which is typically enough for light personal use.
+The free tier includes **1,000 requests per hour**, which is sufficient for most personal projects.
 
-For local testing against Google without a production build, temporarily change `happyHourService.ts` to always return `new GooglePlacesService()`.
+For local testing against Foursquare without a production build, temporarily change `happyHourService.ts` to always return `new FoursquareService()`.
 
-> **Note:** Google returns general opening hours, not dedicated happy hour schedules. Hours are parsed into `happyHours` when possible; deal descriptions remain empty until a dedicated deals source is added.
+> **Note:** Foursquare returns regular venue hours, not dedicated happy hour schedules. Hours are parsed into `happyHours` when possible; deal descriptions remain empty until a dedicated deals source is added.
 
 ## Scripts
 
@@ -76,7 +71,7 @@ src/
 ├── components/     # UI (ZipCodeInput, VenueCard, FilterBar, etc.)
 ├── context/        # App state machine (useReducer)
 ├── hooks/          # useZipCode, useHappyHours
-├── services/       # Mock + Google Places happy hour services
+├── services/       # Mock + Foursquare happy hour services
 ├── types/          # Venue and related types
 └── utils/          # Zip validation, time, distance, filtering
 ```
