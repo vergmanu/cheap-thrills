@@ -29,15 +29,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   try {
-    const response = await fetch(
-      `https://api.foursquare.com/v3/places/search?${searchParams.toString()}`,
-      {
-        headers: {
-          Authorization: `fsq ${apiKey}`,
-          Accept: 'application/json',
-        },
-      },
-    );
+    //const response = await fetch(
+      // `https://api.foursquare.com/v3/places/search?${searchParams.toString()}`,
+      // {
+      //   headers: {
+      //     Authorization: `fsq ${apiKey}`,
+      //     Accept: 'application/json',
+      //   },
+      // },
+    //);
+      
+      // Step 1: Convert zip to city using free Zippopotam API (no key needed)
+const geoRes = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+if (!geoRes.ok) {
+  return res.status(400).json({ error: 'Could not locate zip code. Please try again.' });
+}
+const geoData = await geoRes.json();
+const city = geoData.places[0]['place name'];
+const state = geoData.places[0]['state abbreviation'];
+const location = `${city}, ${state}`;
+
+// Step 2: Use city string in Foursquare request
+const response = await fetch(
+  `https://api.foursquare.com/v3/places/search?query=happy+hour&near=${encodeURIComponent(location)}&categories=13003,13065&limit=20&fields=fsq_id,name,location,distance,rating,tel,website,hours,categories`,
+  {
+    headers: {
+      Authorization: `fsq ${apiKey}`,
+      Accept: 'application/json',
+    },
+  }
+);
 
     if (!response.ok) {
       return res
