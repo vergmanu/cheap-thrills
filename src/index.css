@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #0f0e11;
+  --color-surface: #1c1a21;
+  --color-accent: #f5a623;
+  --color-accent-muted: #3d2e12;
+  --color-text-primary: #f0eef5;
+  --color-text-secondary: #8b879a;
+  --color-success: #2ecc71;
+  --color-border: #2a2730;
+  --color-error: #e74c3c;
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply min-h-screen bg-bg font-sans text-text-primary;
+  }
+}
