@@ -35,14 +35,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         headers: {
           Authorization: `fsq ${apiKey}`,
           Accept: 'application/json',
-        },
+      
       },
     );
 
     if (!response.ok) {
-      return res
-        .status(response.status)
-        .json({ error: 'Foursquare request failed' });
+      const errorBody = await response.json();
+      return res.status(response.status).json({ 
+        error: 'Foursquare request failed',
+        details: errorBody
+      });
     }
 
     const data = await response.json();
