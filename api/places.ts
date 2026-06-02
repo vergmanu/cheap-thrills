@@ -62,45 +62,42 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Zip code is required' });
   }
 
-  const apiKey = process.env.FOURSQUARE_API_KEY;
+  const apiKey = process.env.GEOAPIFY_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Foursquare API is not configured' });
+    return res.status(500).json({ error: 'Geoapify API is not configured' });
   }
 
   const limit = process.env.MAX_RESULTS || '20';
+  const radius = process.env.SEARCH_RADIUS_MILES || '5';
+  const radiusMeters = Math.round(Number(radius) * 1609);
 
   try {
-    // Step 1: Convert zip to city using Zippopotam (no key needed)
-    const geoRes = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+    // Step 1: Convert zip code to lat/lng using Geoapify Geocoding
+    const geoRes = await fetch(
+      `https://api.geoapify.com/v1/geocode/search?postcode=${zipCode}&countrycode=us&apiKey=${apiKey}`
+    );
     if (!geoRes.ok) {
       return res.status(400).json({ error: 'Could not locate zip code. Please try again.' });
     }
     const geoData = await geoRes.json();
-    const city = geoData.places[0]['place name'];
-    const state = geoData.places[0]['state abbreviation'];
-    const location = `${city}, ${state}`;
+    if (!geoData.features || geoData.features.length === 0) {
+      return res.status(400).json({ error: 'Zip code not found. Please try again.' });
+    }
+    const [lon, lat] = geoData.features[0].geometry.coordinates;
 
-    // Step 2: Search Foursquare using city string
-    const response = await fetch(
-      `https://places-api.foursquare.com/places/search?query=happy+hour&near=${encodeURIComponent(location)}&categories=13003,13065&limit=${limit}&fields=fsq_id,name,location,distance,rating,tel,website,hours,categories`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'X-Places-Api-Version': '2025-06-17',
-          Accept: 'application/json',
-        },
-      }
+    // Step 2: Search for bars and restaurants near those coordinates
+    const placesRes = await fetch(
+      `https://api.geoapify.com/v2/places?categories=catering.bar,catering.restaurant&filter=circle:${lon},${lat},${radiusMeters}&limit=${limit}&apiKey=${apiKey}`
     );
-
-    if (!response.ok) {
-      const errorBody = await response.json();
-      return res.status(response.status).json({
-        error: 'Foursquare request failed',
+    if (!placesRes.ok) {
+      const errorBody = await placesRes.json();
+      return res.status(placesRes.status).json({
+        error: 'Places request failed',
         details: errorBody,
       });
     }
 
-    const data = await response.json();
+    const data = await placesRes.json();
     res.setHeader('Access-Control-Allow-Origin', '*');
     return res.status(200).json(data);
 
