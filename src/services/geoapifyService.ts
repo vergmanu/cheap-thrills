@@ -25,7 +25,7 @@ interface GeoapifyProperties {
   website?: string;
   phone?: string;
   opening_hours?: string;
-  categories?: string[];
+  categories?: GeoapifyCategory[];
   datasource?: {
     raw?: {
       phone?: string;
@@ -50,7 +50,7 @@ function getConfig() {
 }
 
 function inferDealTypes(
-  categories: string[] | undefined,
+  categories: GeoapifyCategory[] | undefined,
 ): ('drinks' | 'food')[] {
   if (!categories || categories.length === 0) return ['drinks'];
   const joined = categories.join(',').toLowerCase();
