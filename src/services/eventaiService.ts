@@ -166,6 +166,8 @@ interface EventAIVenue {
   state: string;
   website?: string;
   phone?: string;
+  lat?: number;
+  lng?: number;
 }
 
 interface EventAIHappyHour {
@@ -176,12 +178,32 @@ interface EventAIHappyHour {
   end_time: string;
   specials: string[];
   confidence: number;
-  distance_miles?: number;
 }
 
 interface EventAISearchResponse {
   count: number;
   results: EventAIHappyHour[];
+  searchLat?: number;
+  searchLng?: number;
+}
+
+function haversineDistance(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const R = 3958.8;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 10) / 10;
 }
 
 function mapToHappyHourWindow(
@@ -208,12 +230,18 @@ function isActiveNow(
   const [endH, endM] = endTime.split(':').map(Number);
   const start = (startH ?? 0) * 60 + (startM ?? 0);
   const end = (endH ?? 0) * 60 + (endM ?? 0);
-  return days.includes(currentDay) &&
+  return (
+    days.includes(currentDay) &&
     currentMinutes >= start &&
-    currentMinutes <= end;
+    currentMinutes <= end
+  );
 }
 
-function mapResultToVenue(result: EventAIHappyHour): Venue {
+function mapResultToVenue(
+  result: EventAIHappyHour,
+  searchLat: number,
+  searchLng: number,
+): Venue {
   const address = [
     result.venue.address,
     result.venue.city,
@@ -230,21 +258,21 @@ function mapResultToVenue(result: EventAIHappyHour): Venue {
     ),
   ];
 
-  // const deals = result.specials.map((s) => ({
-  //   description: s,
-  //   type: 'drinks' as const,
-  // }));
-
   const deals = (result.specials ?? []).map((s) => ({
     description: typeof s === 'string' ? s : JSON.stringify(s),
     type: 'drinks' as const,
   }));
-  
+
+  const distanceMiles =
+    result.venue.lat !== undefined && result.venue.lng !== undefined
+      ? haversineDistance(searchLat, searchLng, result.venue.lat, result.venue.lng)
+      : 0;
+
   return {
     id: result.id,
     name: result.venue.name,
     address,
-    distanceMiles: 0,
+    distanceMiles,
     happyHours,
     deals,
     dealTypes: ['drinks', 'food'],
@@ -288,6 +316,28 @@ export class EventAIService implements HappyHourServiceInterface {
     }
 
     const data = (await response.json()) as EventAISearchResponse;
-    return (data.results ?? []).map(mapResultToVenue);
+
+    const searchLat = data.searchLat ?? 0;
+    const searchLng = data.searchLng ?? 0;
+
+    const results = data.results ?? [];
+
+    // Group duplicate venues and merge their happy hours and deals
+    const grouped = new Map<string, Venue>();
+    for (const result of results.map((r) =>
+      mapResultToVenue(r, searchLat, searchLng),
+    )) {
+      const existing = grouped.get(result.name);
+      if (existing) {
+        existing.happyHours.push(...result.happyHours);
+        existing.deals.push(...result.deals);
+      } else {
+        grouped.set(result.name, result);
+      }
+    }
+
+    return Array.from(grouped.values()).sort(
+      (a, b) => a.distanceMiles - b.distanceMiles,
+    );
   }
 }
