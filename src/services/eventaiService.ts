@@ -239,7 +239,7 @@ function mapResultToVenue(result: EventAIHappyHour): Venue {
     id: result.id,
     name: result.venue.name,
     address,
-    distanceMiles: result.distance_miles ?? 0,
+    distanceMiles: 0,
     happyHours,
     deals,
     dealTypes: ['drinks', 'food'],
