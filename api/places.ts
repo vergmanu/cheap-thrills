@@ -79,8 +79,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!geoData.places || geoData.places.length === 0) {
       return res.status(400).json({ error: 'Zip code not found. Please try again.' });
     }
-    const lat = geoData.places[0].latitude;
-    const lng = geoData.places[0].longitude;
+    const lat = parseFloat(geoData.places[0].latitude);
+    const lng = parseFloat(geoData.places[0].longitude);
+
+    console.log('Searching near:', { lat, lng, radius, limit });
 
     // Step 2: Fetch happy hours from EventAI
     const params = new URLSearchParams({
