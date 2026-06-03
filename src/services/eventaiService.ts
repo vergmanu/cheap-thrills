@@ -230,11 +230,16 @@ function mapResultToVenue(result: EventAIHappyHour): Venue {
     ),
   ];
 
-  const deals = result.specials.map((s) => ({
-    description: s,
+  // const deals = result.specials.map((s) => ({
+  //   description: s,
+  //   type: 'drinks' as const,
+  // }));
+
+  const deals = (result.specials ?? []).map((s) => ({
+    description: typeof s === 'string' ? s : JSON.stringify(s),
     type: 'drinks' as const,
   }));
-
+  
   return {
     id: result.id,
     name: result.venue.name,
