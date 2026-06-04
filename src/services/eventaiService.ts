@@ -301,20 +301,30 @@ export class EventAIService implements HappyHourServiceInterface {
     const data = (await response.json()) as EventAISearchResponse;
     const results = data.results ?? [];
 
-    // Group duplicate venues and merge their happy hours and deals
-    const grouped = new Map<string, Venue>();
-    for (const result of results.map((r) => mapResultToVenue(r))) {
-      const existing = grouped.get(result.name);
-      if (existing) {
-        existing.happyHours.push(...result.happyHours);
-        existing.deals.push(...result.deals);
-      } else {
-        grouped.set(result.name, result);
+// Group duplicate venues and merge their happy hours and deals
+const grouped = new Map<string, Venue>();
+for (const result of results.map((r) => mapResultToVenue(r))) {
+  const existing = grouped.get(result.name);
+  if (existing) {
+    // Merge happy hours
+    existing.happyHours.push(...result.happyHours);
+
+    // Only add deals that don't already exist
+    for (const deal of result.deals) {
+      const alreadyExists = existing.deals.some(
+        (d) => d.description === deal.description,
+      );
+      if (!alreadyExists) {
+        existing.deals.push(deal);
       }
     }
-
-    return Array.from(grouped.values()).sort(
-      (a, b) => a.distanceMiles - b.distanceMiles,
-    );
+  } else {
+    grouped.set(result.name, result);
   }
+}
+
+return Array.from(grouped.values()).sort(
+  (a, b) => a.distanceMiles - b.distanceMiles,
+);
+}
 }
