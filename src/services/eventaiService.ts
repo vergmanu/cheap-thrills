@@ -147,7 +147,7 @@ import type {
 } from '../types/venue';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
-const PROXY_URL = '/api/places';
+const PROXY_URL = '/api/venues';
 
 const DAY_NUM_TO_SHORT: Record<number, string> = {
   1: 'Mon',
