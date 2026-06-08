@@ -11,7 +11,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.108.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -29,7 +28,6 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.6.3",
-    "vercel": "^54.10.1",
     "vite": "^5.4.11",
     "vitest": "^2.1.8"
   },
