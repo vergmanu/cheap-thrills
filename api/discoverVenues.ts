@@ -100,8 +100,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const response = await fetch(OVERPASS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `data=${encodeURIComponent(query)}`,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ data: query }).toString(),
       signal: AbortSignal.timeout(65_000),
     });
 
