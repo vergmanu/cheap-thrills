@@ -145,18 +145,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-const OVERPASS_URL = 'https://overpass.kumi.systems/api/interpreter';
+const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 
 // LA county bounding box — tighten or loosen as needed
 const LA_BOUNDS = {
-  south: 33.70,
-  west: -118.67,
-  north: 34.34,
-  east: -117.65,
+  south: 34.09,
+  west: -118.23,
+  north: 34.13,
+  east: -118.18,
 };
 
 // OSM amenity tags we care about
-const AMENITY_TAGS = ['bar', 'pub', 'restaurant', 'nightclub', 'biergarten'];
+const AMENITY_TAGS = ['bar'];
 
 interface OsmTags {
   name?: string;
