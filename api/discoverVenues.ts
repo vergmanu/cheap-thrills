@@ -160,15 +160,30 @@ const AMENITY_TAGS = ['bar', 'pub', 'restaurant', 'nightclub', 'biergarten'];
 
 interface OsmTags {
   name?: string;
+
   website?: string;
   phone?: string;
+  email?: string;
+
   amenity?: string;
-  'addr:street'?: string;
-  'addr:housenumber'?: string;
-  'addr:city'?: string;
-  'addr:state'?: string;
-  'addr:postcode'?: string;
+  cuisine?: string;
+
   opening_hours?: string;
+
+  facebook?: string;
+  instagram?: string;
+
+  brand?: string;
+  operator?: string;
+
+  "contact:website"?: string;
+  "contact:phone"?: string;
+
+  "addr:street"?: string;
+  "addr:housenumber"?: string;
+  "addr:city"?: string;
+  "addr:state"?: string;
+  "addr:postcode"?: string;
 }
 
 interface OsmElement {
@@ -188,7 +203,17 @@ function buildOverpassQuery(bounds: typeof LA_BOUNDS, amenities: string[]): stri
   const bbox = `${bounds.south},${bounds.west},${bounds.north},${bounds.east}`;
   const amenityFilter = amenities.join('|');
 
-  return `[out:json][timeout:60];(node["amenity"~"${amenityFilter}"]["name"](${bbox});way["amenity"~"${amenityFilter}"]["name"](${bbox}););out body;>;out skel qt;`;
+  return `
+[out:json][timeout:60];
+
+(
+  node["amenity"~"${amenityFilter}"]["name"](${bbox});
+  way["amenity"~"${amenityFilter}"]["name"](${bbox});
+  relation["amenity"~"${amenityFilter}"]["name"](${bbox});
+);
+
+out center tags;
+`;
 }
 
 function extractVenue(el: OsmElement) {
@@ -206,8 +231,8 @@ function extractVenue(el: OsmElement) {
   return {
     osm_id: `${el.type}/${el.id}`,
     name: tags.name,
-    website: tags.website ?? null,
-    phone: tags.phone ?? null,
+    website: tags.website ?? tags["contact:website"] ?? null,
+    phone: tags.phone ?? tags["contact:phone"] ?? null,
     amenity: tags.amenity ?? null,
     address,
     city: tags['addr:city'] ?? null,
@@ -215,6 +240,7 @@ function extractVenue(el: OsmElement) {
     zip: tags['addr:postcode'] ?? null,
     latitude: lat,
     longitude: lon,
+    opening_hours: tags.opening_hours ?? null,
   };
 }
 
@@ -264,12 +290,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const elements = data.elements ?? [];
 
     const venues = elements
-      .map(extractVenue)
-      .filter((v): v is NonNullable<ReturnType<typeof extractVenue>> => v !== null);
+  .map(extractVenue)
+  .filter((v): v is NonNullable<ReturnType<typeof extractVenue>> => v !== null);
 
-    console.log('5. Venues extracted (non-null):', venues.length);
+console.log('5. Venues extracted (non-null):', venues.length);
 
-    if (venues.length === 0) {
+// Data quality metrics
+const withWebsite =
+  venues.filter(v => v.website).length;
+
+const withAddress =
+  venues.filter(v => v.address).length;
+
+const withHours =
+  venues.filter(v => v.opening_hours).length;
+
+console.log('Venue quality metrics:', {
+  total: venues.length,
+  withWebsite,
+  withAddress,
+  withHours,
+  websitePct: ((withWebsite / venues.length) * 100).toFixed(1) + '%',
+  addressPct: ((withAddress / venues.length) * 100).toFixed(1) + '%',
+  hoursPct: ((withHours / venues.length) * 100).toFixed(1) + '%',
+});
+
+//Firecrawl readiness check
+const crawlCandidates =
+  venues.filter(v => v.website);
+
+console.log(
+  `Ready for crawling: ${crawlCandidates.length}`
+);
+
+console.log(
+  `Crawl coverage: ${(
+    (crawlCandidates.length / venues.length) * 100
+  ).toFixed(1)}%`
+);
+
+if (venues.length === 0) {
       return res.status(200).json({ discovered: 0, upserted: 0, message: 'No venues extracted' });
     }
 
