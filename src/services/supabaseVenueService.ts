@@ -66,7 +66,7 @@ function mapSupabaseVenueToVenue(venue: SupabaseVenue): Venue {
   };
 }
 
-export class EventAIService implements HappyHourServiceInterface {
+export class SupabaseVenueService implements HappyHourServiceInterface {
   async getVenues(
     query: HappyHourQuery,
     options?: HappyHourServiceOptions,
