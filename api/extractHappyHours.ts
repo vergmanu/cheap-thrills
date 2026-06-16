@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import Groq from 'groq-sdk';
 
 const BATCH_SIZE = 10;
 const CONFIDENCE_THRESHOLD = 0.7;
@@ -12,108 +13,8 @@ interface HappyHourExtraction {
   confidence: number;
 }
 
-// Rule-based extraction patterns
-const DAYS_PATTERN = /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|weekday|weekend|daily|all day)/gi;
-const DEAL_KEYWORDS = ['draft', 'beer', 'cocktail', 'margarita', 'wine', 'appetizer', 'happy hour', 'special', 'discount', 'off', 'deal', 'promotion'];
-
-function parseTime(hourStr: string, minStr: string | undefined, period: string | undefined): string | null {
-  const hour = parseInt(hourStr, 10);
-  const min = minStr ? parseInt(minStr, 10) : 0;
-
-  // Validate ranges
-  if (min > 59) return null;
-  if (period && period.toLowerCase() === 'pm' && hour < 12) return `${String(hour + 12).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-  if (period && period.toLowerCase() === 'am' && hour === 12) return `00:${String(min).padStart(2, '0')}`;
-  if (hour > 23) return null;
-
-  return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-}
-
-function extractHappyHours(markdown: string): HappyHourExtraction[] {
-  const hours: HappyHourExtraction[] = [];
-  const lines = markdown.split('\n').filter((l) => l.trim().length > 0);
-
-  for (const line of lines) {
-    // Skip lines that are clearly not happy hour related
-    if (line.length > 300 || !line.match(/\d/)) continue;
-
-    const lowerLine = line.toLowerCase();
-
-    // Check if line has deal keywords or day/time patterns (don't require both)
-    const hasDealKeyword = DEAL_KEYWORDS.some((kw) => lowerLine.includes(kw));
-    const earlyDayMatches = lowerLine.match(DAYS_PATTERN) || [];
-    const hasDayName = earlyDayMatches.length > 0;
-
-    // Skip only if line has neither deal keywords nor day names
-    if (!hasDealKeyword && !hasDayName) continue;
-
-    // Extract times: look for patterns like "5-7pm", "17:00-19:00", "5 - 7 pm"
-    let startTime = '';
-    let endTime = '';
-    let timeConfidence = 0;
-
-    // Try to match time range: (h)h(:mm)?(am|pm)? - (h)h(:mm)?(am|pm)?
-    const timeRangePattern = /(\d{1,2})(?::(\d{2}))?\s*(?:(am|pm))?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(?:(am|pm))?/gi;
-    const timeRangeMatch = timeRangePattern.exec(line);
-
-    if (timeRangeMatch) {
-      // If only the end has am/pm, infer the same period for the start (e.g. "4–6:30 pm" → both pm)
-      const startPeriod = timeRangeMatch[3] || timeRangeMatch[6];
-      const endPeriod = timeRangeMatch[6];
-      const start = parseTime(timeRangeMatch[1], timeRangeMatch[2], startPeriod);
-      const end = parseTime(timeRangeMatch[4], timeRangeMatch[5], endPeriod);
-
-      if (start && end) {
-        startTime = start;
-        endTime = end;
-        timeConfidence = 0.95;
-      }
-    }
-
-    // If no range found, look for single times
-    if (!startTime) {
-      const singleTimePattern = /(\d{1,2})(?::(\d{2}))?\s*(?:(am|pm))?/gi;
-      const times: string[] = [];
-      let match: RegExpExecArray | null;
-
-      while ((match = singleTimePattern.exec(line)) !== null) {
-        const time = parseTime(match[1], match[2], match[3]);
-        if (time) times.push(time);
-      }
-
-      if (times.length >= 2) {
-        startTime = times[0];
-        endTime = times[1];
-        timeConfidence = 0.85;
-      } else if (times.length === 1) {
-        startTime = times[0];
-        endTime = '23:59';
-        timeConfidence = 0.6;
-      }
-    }
-
-    // Extract days (reuse match result from above)
-    const dayOfWeek: string = earlyDayMatches[0] ?? 'Unknown';
-    const dayConfidence = earlyDayMatches.length > 0 ? 0.9 : 0.5;
-
-    // Extract deals
-    const dealDescription = line.substring(0, 100).trim();
-
-    // Combined confidence
-    const confidence = (timeConfidence + dayConfidence) / 2;
-
-    if (confidence >= CONFIDENCE_THRESHOLD && (startTime || dayOfWeek !== 'Unknown')) {
-      hours.push({
-        dayOfWeek,
-        startTime,
-        endTime,
-        dealDescription,
-        confidence: Math.min(confidence, 0.95),
-      });
-    }
-  }
-
-  return hours.slice(0, 5); // Return max 5 per venue (avoid noise)
+interface ExtractionResult {
+  happyHours: HappyHourExtraction[];
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -126,6 +27,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   );
+
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY! });
 
   // Fetch batch of 'done' rows that haven't been extracted yet
   const { data: batch, error: fetchError } = await supabase
@@ -143,12 +46,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Filter to only rows with raw_markdown (exclude null/empty)
   const rowsWithMarkdown = (batch ?? []).filter((r: any) => r.raw_markdown && r.raw_markdown.trim().length > 0);
 
+  console.log('Rows with markdown:', rowsWithMarkdown.length);
+  if (rowsWithMarkdown.length > 0) {
+    console.log('First row venue:', rowsWithMarkdown[0].venues);
+    console.log('First row markdown length:', rowsWithMarkdown[0].raw_markdown?.length);
+  }
+
   if (rowsWithMarkdown.length === 0) {
     return res.status(200).json({ extracted: 0, message: 'No done rows with markdown to extract' });
   }
 
   const results = { extracted: 0, failed: 0, skipped: 0, lowConfidence: 0 };
-
   for (const row of rowsWithMarkdown) {
     const venue = (row.venues as unknown) as { id: string; name: string; website: string } | null;
 
@@ -161,22 +69,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(`Extracting: ${venue.name}`);
 
     try {
-      // Rule-based extraction (no API calls needed)
-      const happyHoursRaw = extractHappyHours(row.raw_markdown);
+      const prompt = `Extract all happy hour promotions from this website text. Return day, time, and deal descriptions. Be conservative with confidence scores. If times are missing but days are mentioned, still return the day with empty times and lower confidence.
 
-      if (happyHoursRaw.length === 0) {
-        console.log(`  No happy hours found in markdown`);
-        results.skipped++;
-        // Mark as extracted so we don't retry it on every batch
-        await supabase
-          .from('crawl_queue')
-          .update({ status: 'extracted', last_attempt_at: new Date().toISOString() })
-          .eq('id', row.id);
-        continue;
+Website: ${venue.website}
+Venue: ${venue.name}
+
+${row.raw_markdown}
+
+Return a JSON object with this exact structure:
+{
+  "happyHours": [
+    {
+      "dayOfWeek": "Monday-Friday",
+      "startTime": "17:00",
+      "endTime": "19:00",
+      "dealDescription": "$5 draft beers",
+      "confidence": 0.95
+    }
+  ]
+}
+
+If no happy hours found, return {"happyHours": []}.`;
+
+      const completion = await groq.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+      });
+      const responseText = completion.choices[0].message.content ?? '';
+
+      // Parse JSON from response
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
       }
 
+      const extraction = JSON.parse(jsonMatch[0]) as ExtractionResult;
+
       // Filter by confidence and clean up times
-      const validHours = happyHoursRaw
+      const validHours = extraction.happyHours
         .filter((h) => h.confidence >= CONFIDENCE_THRESHOLD)
         .map((h) => ({
           venue_id: venue.id,
@@ -188,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           source_url: venue.website,
         }));
 
-      const skippedCount = happyHoursRaw.length - validHours.length;
+      const skippedCount = extraction.happyHours.length - validHours.length;
       if (skippedCount > 0) {
         console.log(`  Skipped ${skippedCount} low-confidence entries (< ${CONFIDENCE_THRESHOLD})`);
         results.lowConfidence += skippedCount;
