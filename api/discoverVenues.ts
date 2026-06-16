@@ -145,7 +145,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
+// Primary + fallback — overpass-api.de rate-limits by IP (406) when hit too frequently
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+];
 
 // Northeast LA: Highland Park (90042), Eagle Rock (90041), Glassell Park (90065),
 // Atwater Village (90039), Cypress Park (90031), El Sereno (90032), Silver Lake fringe
@@ -258,21 +262,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const query = buildOverpassQuery(LA_BOUNDS, AMENITY_TAGS);
     console.log('1. Query built:', query.substring(0, 150));
 
-    const response = await fetch(OVERPASS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: 'data=' + encodeURIComponent(query),
-      signal: AbortSignal.timeout(65_000),
-    });
+    let response: Response | null = null;
+    for (const endpoint of OVERPASS_ENDPOINTS) {
+      console.log('2. Trying Overpass endpoint:', endpoint);
+      const attempt = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query),
+        signal: AbortSignal.timeout(65_000),
+      });
+      console.log('   Status:', attempt.status);
+      if (attempt.ok) {
+        response = attempt;
+        break;
+      }
+    }
 
-    console.log('2. Overpass response status:', response.status);
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.log('3. Overpass error body:', text.substring(0, 300));
-      throw new Error(`Overpass returned ${response.status}`);
+    if (!response || !response.ok) {
+      throw new Error('All Overpass endpoints failed (rate limited or unavailable)');
     }
 
     const data = (await response.json()) as OverpassResponse;
