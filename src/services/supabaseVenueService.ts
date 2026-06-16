@@ -8,6 +8,17 @@ import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 
 const PROXY_URL = '/api/venues';
 
+interface HappyHourRow {
+  id: string;
+  venue_id: string;
+  day_of_week: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  deal_description: string | null;
+  confidence_score: number | null;
+  source_url: string | null;
+}
+
 interface SupabaseVenue {
   id: string;
   osm_id: string;
@@ -22,6 +33,7 @@ interface SupabaseVenue {
   phone: string | null;
   amenity: string | null;
   distance_meters: number;
+  happy_hours: HappyHourRow[];
 }
 
 interface SupabaseVenuesResponse {
@@ -30,11 +42,6 @@ interface SupabaseVenuesResponse {
   searchLng: number;
 }
 
-function inferDealTypes(amenity: string | null): ('drinks' | 'food')[] {
-  if (!amenity) return ['drinks'];
-  if (amenity === 'restaurant') return ['drinks', 'food'];
-  return ['drinks'];
-}
 
 function mapSupabaseVenueToVenue(venue: SupabaseVenue): Venue {
   const address = [
@@ -49,14 +56,40 @@ function mapSupabaseVenueToVenue(venue: SupabaseVenue): Venue {
   const distanceMiles =
     Math.round((venue.distance_meters / 1609.34) * 10) / 10;
 
+  // Convert happy_hours rows to HappyHourWindow[]
+  const happyHours = (venue.happy_hours ?? [])
+    .filter((hh) => hh.confidence_score !== null && hh.confidence_score >= 0.7)
+    .map((hh) => ({
+      days: [hh.day_of_week ?? 'Unknown'].filter(Boolean),
+      startTime: hh.start_time ?? '00:00',
+      endTime: hh.end_time ?? '23:59',
+    }));
+
+  // Convert deal_description to Deal[]
+  const deals = (venue.happy_hours ?? [])
+    .filter((hh) => hh.deal_description && hh.confidence_score !== null && hh.confidence_score >= 0.7)
+    .map((hh) => ({
+      description: hh.deal_description ?? '',
+      type: 'drinks' as const,
+    }));
+
+  // Derive deal types from deals
+  const dealTypes: ('drinks' | 'food')[] = Array.from(new Set(deals.map((d) => d.type)));
+  if (dealTypes.length === 0 && venue.amenity === 'restaurant') {
+    dealTypes.push('food');
+  }
+  if (dealTypes.length === 0) {
+    dealTypes.push('drinks');
+  }
+
   return {
     id: venue.id,
     name: venue.name,
     address,
     distanceMiles,
-    happyHours: [],
-    deals: [],
-    dealTypes: inferDealTypes(venue.amenity),
+    happyHours,
+    deals,
+    dealTypes: dealTypes as ('drinks' | 'food')[],
     isActiveNow: false,
     websiteUrl: venue.website ?? undefined,
     phoneNumber: venue.phone ?? undefined,

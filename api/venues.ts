@@ -30,7 +30,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const radiusMeters = radiusMiles * 1609.34;
 
     // Step 2: Query Supabase for nearby venues using PostGIS
-    const { data, error } = await supabase.rpc('venues_within_radius', {
+    const { data: venues, error } = await supabase.rpc('venues_within_radius', {
       lat,
       lng,
       radius_meters: radiusMeters,
@@ -38,9 +38,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) throw error;
 
+    // Step 3: Fetch happy_hours for each venue
+    const venueIds = (venues ?? []).map((v: any) => v.id);
+    let happyHoursByVenue: Record<string, any[]> = {};
+
+    if (venueIds.length > 0) {
+      const { data: happyHours, error: hhError } = await supabase
+        .from('happy_hours')
+        .select('*')
+        .in('venue_id', venueIds);
+
+      if (hhError) {
+        console.warn('Failed to fetch happy_hours:', hhError.message);
+      } else if (happyHours) {
+        happyHoursByVenue = happyHours.reduce(
+          (acc, hh) => {
+            if (!acc[hh.venue_id]) acc[hh.venue_id] = [];
+            acc[hh.venue_id].push(hh);
+            return acc;
+          },
+          {} as Record<string, any[]>
+        );
+      }
+    }
+
+    // Step 4: Enrich venue data with happy_hours
+    const enrichedVenues = (venues ?? []).map((v: any) => ({
+      ...v,
+      happy_hours: happyHoursByVenue[v.id] ?? [],
+    }));
+
     res.setHeader('Access-Control-Allow-Origin', '*');
     return res.status(200).json({
-      results: data ?? [],
+      results: enrichedVenues,
       searchLat: lat,
       searchLng: lng,
     });
