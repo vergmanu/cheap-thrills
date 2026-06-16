@@ -11,9 +11,11 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@mendable/firecrawl-js": "^4.27.0",
     "@supabase/supabase-js": "^2.108.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "zod": "^3.25.28"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
