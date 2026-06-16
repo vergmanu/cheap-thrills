@@ -204,17 +204,7 @@ function buildOverpassQuery(bounds: typeof LA_BOUNDS, amenities: string[]): stri
   const bbox = `${bounds.south},${bounds.west},${bounds.north},${bounds.east}`;
   const amenityFilter = amenities.join('|');
 
-  return `
-[out:json][timeout:60];
-
-(
-  node["amenity"~"${amenityFilter}"]["name"](${bbox});
-  way["amenity"~"${amenityFilter}"]["name"](${bbox});
-  relation["amenity"~"${amenityFilter}"]["name"](${bbox});
-);
-
-out center tags;
-`;
+  return `[out:json][timeout:60];(node["amenity"~"${amenityFilter}"]["name"](${bbox});way["amenity"~"${amenityFilter}"]["name"](${bbox}););out center;`;
 }
 
 function extractVenue(el: OsmElement) {
