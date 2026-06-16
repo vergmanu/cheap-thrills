@@ -5,6 +5,7 @@
 #   bash scripts/test-pipeline.sh 1       — discover venues (OSM → Supabase)
 #   bash scripts/test-pipeline.sh 2       — seed crawl_queue from venues with websites
 #   bash scripts/test-pipeline.sh 3       — crawl one batch of 10 venues
+#   bash scripts/test-pipeline.sh 4       — extract happy hours from one batch (Claude Haiku)
 #   bash scripts/test-pipeline.sh drain   — crawl ALL pending venues (loops until empty)
 #   bash scripts/test-pipeline.sh all     — run steps 1, 2, then one batch of step 3
 
@@ -57,6 +58,7 @@ case "$STEP" in
   1)     run_step "Step 1: Discover venues (OSM → Supabase)" "/api/discoverVenues" ;;
   2)     run_step "Step 2: Seed crawl queue" "/api/seedCrawlQueue" ;;
   3)     run_step "Step 3: Crawl one batch (10 venues)" "/api/crawlVenues" ;;
+  4)     run_step "Step 4: Extract happy hours (Claude Haiku)" "/api/extractHappyHours" ;;
   drain) drain_queue ;;
   all)
     run_step "Step 1: Discover venues (OSM → Supabase)" "/api/discoverVenues"
@@ -66,9 +68,12 @@ case "$STEP" in
     echo "Waiting 3s..."
     sleep 3
     run_step "Step 3: Crawl one batch (10 venues)" "/api/crawlVenues"
+    echo "Waiting 3s..."
+    sleep 3
+    run_step "Step 4: Extract happy hours (Claude Haiku)" "/api/extractHappyHours"
     ;;
   *)
-    echo "Usage: bash scripts/test-pipeline.sh [1|2|3|drain|all]"
+    echo "Usage: bash scripts/test-pipeline.sh [1|2|3|4|drain|all]"
     exit 1
     ;;
 esac
