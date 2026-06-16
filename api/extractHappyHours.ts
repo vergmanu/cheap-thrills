@@ -38,10 +38,13 @@ function extractHappyHours(markdown: string): HappyHourExtraction[] {
     if (line.length > 300 || !line.match(/\d/)) continue;
 
     const lowerLine = line.toLowerCase();
-    const hasDealKeyword = DEAL_KEYWORDS.some((kw) => lowerLine.includes(kw));
 
-    // Only process lines that mention deals
-    if (!hasDealKeyword) continue;
+    // Check if line has deal keywords or day/time patterns (don't require both)
+    const hasDealKeyword = DEAL_KEYWORDS.some((kw) => lowerLine.includes(kw));
+    const hasDayName = DAYS_PATTERN.test(lowerLine);
+
+    // Skip only if line has neither deal keywords nor day names
+    if (!hasDealKeyword && !hasDayName) continue;
 
     // Extract times: look for patterns like "5-7pm", "17:00-19:00", "5 - 7 pm"
     let startTime = '';
