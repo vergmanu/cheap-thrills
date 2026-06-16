@@ -13,11 +13,21 @@ interface HappyHourExtraction {
 }
 
 // Rule-based extraction patterns
-const TIME_PATTERN = /(\d{1,2}):?(\d{2})?\s*(?:am|pm|AM|PM)?/g;
-const TIME_RANGE_PATTERN = /(\d{1,2}):?(\d{2})?\s*(?:am|pm)?\s*[-–]\s*(\d{1,2}):?(\d{2})?\s*(?:am|pm)?/gi;
-const AMPM_PATTERN = /(\d{1,2})\s*(am|pm|AM|PM)/gi;
 const DAYS_PATTERN = /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun|weekday|weekend|daily|all day)/gi;
 const DEAL_KEYWORDS = ['draft', 'beer', 'cocktail', 'margarita', 'wine', 'appetizer', 'happy hour', 'special', 'discount', 'off', 'deal', 'promotion'];
+
+function parseTime(hourStr: string, minStr: string | undefined, period: string | undefined): string | null {
+  const hour = parseInt(hourStr, 10);
+  const min = minStr ? parseInt(minStr, 10) : 0;
+
+  // Validate ranges
+  if (min > 59) return null;
+  if (period && period.toLowerCase() === 'pm' && hour < 12) return `${String(hour + 12).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+  if (period && period.toLowerCase() === 'am' && hour === 12) return `00:${String(min).padStart(2, '0')}`;
+  if (hour > 23) return null;
+
+  return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}
 
 function extractHappyHours(markdown: string): HappyHourExtraction[] {
   const hours: HappyHourExtraction[] = [];
@@ -28,32 +38,45 @@ function extractHappyHours(markdown: string): HappyHourExtraction[] {
     if (line.length > 300 || !line.match(/\d/)) continue;
 
     const lowerLine = line.toLowerCase();
-    const hasDayKeyword = DAYS_PATTERN.test(lowerLine);
     const hasDealKeyword = DEAL_KEYWORDS.some((kw) => lowerLine.includes(kw));
 
-    // Only process lines that mention both days/times and deals
+    // Only process lines that mention deals
     if (!hasDealKeyword) continue;
 
-    // Extract times
+    // Extract times: look for patterns like "5-7pm", "17:00-19:00", "5 - 7 pm"
     let startTime = '';
     let endTime = '';
     let timeConfidence = 0;
 
-    const timeRangeMatch = TIME_RANGE_PATTERN.exec(line);
+    // Try to match time range: (h)h(:mm)?(am|pm)? - (h)h(:mm)?(am|pm)?
+    const timeRangePattern = /(\d{1,2})(?::(\d{2}))?\s*(?:(am|pm))?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(?:(am|pm))?/gi;
+    const timeRangeMatch = timeRangePattern.exec(line);
+
     if (timeRangeMatch) {
-      startTime = `${String(timeRangeMatch[1]).padStart(2, '0')}:${timeRangeMatch[2] || '00'}`;
-      endTime = `${String(timeRangeMatch[3]).padStart(2, '0')}:${timeRangeMatch[4] || '00'}`;
-      timeConfidence = 0.95;
-    } else {
-      // Try to find individual times
-      const times = [];
-      let match;
-      TIME_PATTERN.lastIndex = 0;
-      while ((match = TIME_PATTERN.exec(line)) !== null) {
-        times.push(`${String(match[1]).padStart(2, '0')}:${match[2] || '00'}`);
+      const start = parseTime(timeRangeMatch[1], timeRangeMatch[2], timeRangeMatch[3]);
+      const end = parseTime(timeRangeMatch[4], timeRangeMatch[5], timeRangeMatch[6]);
+
+      if (start && end) {
+        startTime = start;
+        endTime = end;
+        timeConfidence = 0.95;
       }
+    }
+
+    // If no range found, look for single times
+    if (!startTime) {
+      const singleTimePattern = /(\d{1,2})(?::(\d{2}))?\s*(?:(am|pm))?/gi;
+      const times: string[] = [];
+      let match: RegExpExecArray | null;
+
+      while ((match = singleTimePattern.exec(line)) !== null) {
+        const time = parseTime(match[1], match[2], match[3]);
+        if (time) times.push(time);
+      }
+
       if (times.length >= 2) {
-        [startTime, endTime] = times.slice(0, 2);
+        startTime = times[0];
+        endTime = times[1];
         timeConfidence = 0.85;
       } else if (times.length === 1) {
         startTime = times[0];
