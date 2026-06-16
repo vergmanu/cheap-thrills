@@ -57,8 +57,11 @@ function extractHappyHours(markdown: string): HappyHourExtraction[] {
     const timeRangeMatch = timeRangePattern.exec(line);
 
     if (timeRangeMatch) {
-      const start = parseTime(timeRangeMatch[1], timeRangeMatch[2], timeRangeMatch[3]);
-      const end = parseTime(timeRangeMatch[4], timeRangeMatch[5], timeRangeMatch[6]);
+      // If only the end has am/pm, infer the same period for the start (e.g. "4–6:30 pm" → both pm)
+      const startPeriod = timeRangeMatch[3] || timeRangeMatch[6];
+      const endPeriod = timeRangeMatch[6];
+      const start = parseTime(timeRangeMatch[1], timeRangeMatch[2], startPeriod);
+      const end = parseTime(timeRangeMatch[4], timeRangeMatch[5], endPeriod);
 
       if (start && end) {
         startTime = start;
@@ -164,6 +167,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (happyHoursRaw.length === 0) {
         console.log(`  No happy hours found in markdown`);
         results.skipped++;
+        // Mark as extracted so we don't retry it on every batch
+        await supabase
+          .from('crawl_queue')
+          .update({ status: 'extracted', last_attempt_at: new Date().toISOString() })
+          .eq('id', row.id);
         continue;
       }
 
