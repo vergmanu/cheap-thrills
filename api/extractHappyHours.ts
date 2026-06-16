@@ -41,7 +41,8 @@ function extractHappyHours(markdown: string): HappyHourExtraction[] {
 
     // Check if line has deal keywords or day/time patterns (don't require both)
     const hasDealKeyword = DEAL_KEYWORDS.some((kw) => lowerLine.includes(kw));
-    const hasDayName = DAYS_PATTERN.test(lowerLine);
+    const earlyDayMatches = lowerLine.match(DAYS_PATTERN) || [];
+    const hasDayName = earlyDayMatches.length > 0;
 
     // Skip only if line has neither deal keywords nor day names
     if (!hasDealKeyword && !hasDayName) continue;
@@ -88,10 +89,9 @@ function extractHappyHours(markdown: string): HappyHourExtraction[] {
       }
     }
 
-    // Extract days
-    const dayMatches = lowerLine.match(DAYS_PATTERN) || [];
-    const dayOfWeek = dayMatches.length > 0 ? dayMatches[0] : 'Unknown';
-    const dayConfidence = dayMatches.length > 0 ? 0.9 : 0.5;
+    // Extract days (reuse match result from above)
+    const dayOfWeek: string = earlyDayMatches[0] ?? 'Unknown';
+    const dayConfidence = earlyDayMatches.length > 0 ? 0.9 : 0.5;
 
     // Extract deals
     const dealDescription = line.substring(0, 100).trim();
