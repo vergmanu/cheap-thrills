@@ -147,16 +147,17 @@ import { createClient } from '@supabase/supabase-js';
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 
-// LA county bounding box — tighten or loosen as needed
+// Northeast LA: Highland Park (90042), Eagle Rock (90041), Glassell Park (90065),
+// Atwater Village (90039), Cypress Park (90031), El Sereno (90032), Silver Lake fringe
 const LA_BOUNDS = {
-  south: 34.09,
-  west: -118.23,
-  north: 34.13,
-  east: -118.18,
+  south: 34.05,
+  west: -118.30,
+  north: 34.16,
+  east: -118.10,
 };
 
-// OSM amenity tags we care about
-const AMENITY_TAGS = ['bar'];
+// OSM amenity tags for happy-hour-eligible venues
+const AMENITY_TAGS = ['bar', 'pub', 'restaurant', 'nightclub', 'biergarten'];
 
 interface OsmTags {
   name?: string;
