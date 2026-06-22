@@ -132,6 +132,7 @@ export class SupabaseVenueService implements HappyHourServiceInterface {
 
     return results
       .map(mapSupabaseVenueToVenue)
+      .filter((v) => v.happyHours.length > 0 || v.deals.length > 0)
       .sort((a, b) => a.distanceMiles - b.distanceMiles);
   }
 }

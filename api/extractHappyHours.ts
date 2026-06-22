@@ -2,8 +2,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import Groq from 'groq-sdk';
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 5;
 const CONFIDENCE_THRESHOLD = 0.7;
+// Groq free tier: 12k TPM. ~900 tokens fixed overhead → ~8400 chars of markdown is safe per request.
+const MAX_MARKDOWN_CHARS = 8000;
 
 interface HappyHourExtraction {
   dayOfWeek: string;
@@ -69,12 +71,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(`Extracting: ${venue.name}`);
 
     try {
+      const markdown = (row.raw_markdown as string).slice(0, MAX_MARKDOWN_CHARS);
       const prompt = `Extract all happy hour promotions from this website text. Return day, time, and deal descriptions. Be conservative with confidence scores. If times are missing but days are mentioned, still return the day with empty times and lower confidence.
 
 Website: ${venue.website}
 Venue: ${venue.name}
 
-${row.raw_markdown}
+${markdown}
 
 Return a JSON object with this exact structure:
 {
@@ -92,7 +95,7 @@ Return a JSON object with this exact structure:
 If no happy hours found, return {"happyHours": []}.`;
 
       const completion = await groq.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
       });

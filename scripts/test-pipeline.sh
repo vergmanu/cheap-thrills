@@ -2,12 +2,13 @@
 # Local pipeline test — requires `pnpm dev:api` running in another terminal.
 #
 # Usage:
-#   bash scripts/test-pipeline.sh 1       — discover venues (OSM → Supabase)
-#   bash scripts/test-pipeline.sh 2       — seed crawl_queue from venues with websites
-#   bash scripts/test-pipeline.sh 3       — crawl one batch of 10 venues
-#   bash scripts/test-pipeline.sh 4       — extract happy hours from one batch (Claude Haiku)
-#   bash scripts/test-pipeline.sh drain   — crawl ALL pending venues (loops until empty)
-#   bash scripts/test-pipeline.sh all     — run steps 1, 2, then one batch of step 3
+#   bash scripts/test-pipeline.sh 1              — discover venues (OSM → Supabase)
+#   bash scripts/test-pipeline.sh 2              — seed crawl_queue from venues with websites
+#   bash scripts/test-pipeline.sh 3              — crawl one batch of 10 venues
+#   bash scripts/test-pipeline.sh 4              — extract happy hours from one batch (Groq)
+#   bash scripts/test-pipeline.sh drain          — crawl ALL pending venues (loops until empty)
+#   bash scripts/test-pipeline.sh drain-extract  — extract ALL done venues (loops until empty)
+#   bash scripts/test-pipeline.sh all            — run steps 1, 2, then one batch of step 3
 
 set -euo pipefail
 
@@ -52,14 +53,40 @@ drain_queue() {
   done
 }
 
+drain_extract() {
+  echo ""
+  echo "▶ Draining extraction queue (5 venues per batch, 15s between batches)..."
+  local batch=1
+  while true; do
+    echo "  — Batch $batch"
+    local response
+    response=$(curl -s -X POST "$BASE/api/extractHappyHours" \
+      -H "$AUTH" \
+      -H "Content-Type: application/json")
+    echo "$response" | node -e "let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{try{console.log(JSON.stringify(JSON.parse(d),null,2))}catch{console.log(d)}})"
+
+    # Stop when batch = 0 (no more done rows)
+    local processed
+    processed=$(echo "$response" | node -e "let d=''; process.stdin.on('data',c=>d+=c); process.stdin.on('end',()=>{try{const j=JSON.parse(d); console.log(j.batch ?? 0)}catch{console.log(0)}})")
+    if [ "$processed" = "0" ]; then
+      echo "  No more venues to extract. Done."
+      break
+    fi
+
+    batch=$((batch + 1))
+    sleep 15
+  done
+}
+
 STEP="${1:-all}"
 
 case "$STEP" in
-  1)     run_step "Step 1: Discover venues (OSM → Supabase)" "/api/discoverVenues" ;;
-  2)     run_step "Step 2: Seed crawl queue" "/api/seedCrawlQueue" ;;
-  3)     run_step "Step 3: Crawl one batch (10 venues)" "/api/crawlVenues" ;;
-  4)     run_step "Step 4: Extract happy hours (Claude Haiku)" "/api/extractHappyHours" ;;
-  drain) drain_queue ;;
+  1)             run_step "Step 1: Discover venues (OSM → Supabase)" "/api/discoverVenues" ;;
+  2)             run_step "Step 2: Seed crawl queue" "/api/seedCrawlQueue" ;;
+  3)             run_step "Step 3: Crawl one batch (10 venues)" "/api/crawlVenues" ;;
+  4)             run_step "Step 4: Extract happy hours (Groq)" "/api/extractHappyHours" ;;
+  drain)         drain_queue ;;
+  drain-extract) drain_extract ;;
   all)
     run_step "Step 1: Discover venues (OSM → Supabase)" "/api/discoverVenues"
     echo "Waiting 3s..."
@@ -70,7 +97,7 @@ case "$STEP" in
     run_step "Step 3: Crawl one batch (10 venues)" "/api/crawlVenues"
     echo "Waiting 3s..."
     sleep 3
-    run_step "Step 4: Extract happy hours (Claude Haiku)" "/api/extractHappyHours"
+    run_step "Step 4: Extract happy hours (Groq)" "/api/extractHappyHours"
     ;;
   *)
     echo "Usage: bash scripts/test-pipeline.sh [1|2|3|4|drain|all]"
