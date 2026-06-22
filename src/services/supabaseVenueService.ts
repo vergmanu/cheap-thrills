@@ -44,6 +44,43 @@ interface SupabaseVenuesResponse {
 }
 
 
+const FULL_TO_ABBR: Record<string, string> = {
+  sunday: 'Sun', monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed',
+  thursday: 'Thu', friday: 'Fri', saturday: 'Sat',
+};
+const DAY_ORDER = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function parseDayOfWeek(raw: string): string[] {
+  // Handle "&" and "," separated lists: "Friday & Saturday", "Mon, Tue"
+  const parts = raw.split(/[,&]/).map((s) => s.trim());
+
+  const days: string[] = [];
+  for (const part of parts) {
+    // Handle ranges: "Monday-Friday", "Sun-Thu"
+    const rangeParts = part.split('-').map((s) => s.trim());
+    if (rangeParts.length === 2) {
+      const start = FULL_TO_ABBR[rangeParts[0]!.toLowerCase()] ?? rangeParts[0]!;
+      const end = FULL_TO_ABBR[rangeParts[1]!.toLowerCase()] ?? rangeParts[1]!;
+      const startIdx = DAY_ORDER.indexOf(start);
+      const endIdx = DAY_ORDER.indexOf(end);
+      if (startIdx >= 0 && endIdx >= 0) {
+        // Wrap-around support (e.g. Fri-Mon)
+        if (endIdx >= startIdx) {
+          for (let i = startIdx; i <= endIdx; i++) days.push(DAY_ORDER[i]!);
+        } else {
+          for (let i = startIdx; i < 7; i++) days.push(DAY_ORDER[i]!);
+          for (let i = 0; i <= endIdx; i++) days.push(DAY_ORDER[i]!);
+        }
+        continue;
+      }
+    }
+    // Single day
+    const abbr = FULL_TO_ABBR[part.toLowerCase()] ?? part;
+    if (abbr) days.push(abbr);
+  }
+  return days;
+}
+
 function mapSupabaseVenueToVenue(venue: SupabaseVenue): Venue {
   const address = [
     venue.address,
@@ -73,7 +110,7 @@ function mapSupabaseVenueToVenue(venue: SupabaseVenue): Venue {
       return true;
     })
     .map((hh) => ({
-      days: [hh.day_of_week ?? 'Unknown'].filter(Boolean),
+      days: hh.day_of_week ? parseDayOfWeek(hh.day_of_week) : [],
       startTime: validTime(hh.start_time) ?? '00:00',
       endTime: validTime(hh.end_time) ?? '23:59',
     }));
