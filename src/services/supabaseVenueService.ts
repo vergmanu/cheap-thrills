@@ -61,9 +61,16 @@ function mapSupabaseVenueToVenue(venue: SupabaseVenue): Venue {
     return t;
   };
 
-  // Convert happy_hours rows to HappyHourWindow[]
+  // Convert happy_hours rows to HappyHourWindow[], deduped by day+start+end
+  const seenWindows = new Set<string>();
   const happyHours = (venue.happy_hours ?? [])
     .filter((hh) => hh.confidence_score !== null && hh.confidence_score >= 0.7)
+    .filter((hh) => {
+      const key = `${hh.day_of_week}|${hh.start_time}|${hh.end_time}`;
+      if (seenWindows.has(key)) return false;
+      seenWindows.add(key);
+      return true;
+    })
     .map((hh) => ({
       days: [hh.day_of_week ?? 'Unknown'].filter(Boolean),
       startTime: validTime(hh.start_time) ?? '00:00',
