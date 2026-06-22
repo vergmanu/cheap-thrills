@@ -7,6 +7,21 @@ const CONFIDENCE_THRESHOLD = 0.7;
 // Groq free tier: 12k TPM. ~900 tokens fixed overhead → ~8400 chars of markdown is safe per request.
 const MAX_MARKDOWN_CHARS = 8000;
 
+const HAPPY_HOUR_KEYWORDS = [
+  'happy hour', 'happyhour', 'happy-hour',
+  'drink special', 'cocktail special', 'bar special',
+  'half off', 'half price', '2 for 1', 'two for one', 'buy one',
+  'daily deal', 'daily special', 'afternoon special',
+  'discounted', 'discount drink',
+  'well drink', 'house wine', 'draft beer special',
+  'hh special', '$3', '$4', '$5', '$6', '$7', '$8',
+];
+
+function hasHappyHourContent(markdown: string): boolean {
+  const lower = markdown.toLowerCase();
+  return HAPPY_HOUR_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
 interface HappyHourExtraction {
   dayOfWeek: string;
   startTime: string;
@@ -72,7 +87,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       const markdown = (row.raw_markdown as string).slice(0, MAX_MARKDOWN_CHARS);
-      const prompt = `Extract all happy hour promotions from this website text. Return day, time, and deal descriptions. Be conservative with confidence scores. If times are missing but days are mentioned, still return the day with empty times and lower confidence.
+
+      // Pre-filter: skip AI call if page has no happy hour signals
+      if (!hasHappyHourContent(markdown)) {
+        console.log(`  Skipping — no happy hour keywords found`);
+        await supabase.from('happy_hours').delete().eq('venue_id', venue.id);
+        await supabase
+          .from('crawl_queue')
+          .update({ status: 'extracted', last_attempt_at: new Date().toISOString() })
+          .eq('id', row.id);
+        results.skipped++;
+        continue;
+      }
+
+      const prompt = `Extract happy hour promotions from the website text below.
+
+RULES:
+- ONLY extract information explicitly stated in the text. Do NOT infer, guess, or invent details.
+- General opening hours (e.g. "open Mon-Fri 4pm-1am") are NOT happy hours — ignore them.
+- If the text mentions drink/food prices or deals with a specific time window, extract them.
+- If no clear happy hour deal + time window is present, return {"happyHours": []}.
+- For each entry, include the exact phrase from the text that supports the extraction as a quote in dealDescription.
 
 Website: ${venue.website}
 Venue: ${venue.name}
@@ -110,13 +145,16 @@ If no happy hours found, return {"happyHours": []}.`;
       const extraction = JSON.parse(jsonMatch[0]) as ExtractionResult;
 
       // Filter by confidence and clean up times
+      const toValidTime = (t: string): string | null =>
+        /^\d{1,2}:\d{2}$/.test(t) ? t : null;
+
       const validHours = extraction.happyHours
         .filter((h) => h.confidence >= CONFIDENCE_THRESHOLD)
         .map((h) => ({
           venue_id: venue.id,
           day_of_week: h.dayOfWeek,
-          start_time: h.startTime || null,
-          end_time: h.endTime || null,
+          start_time: toValidTime(h.startTime),
+          end_time: toValidTime(h.endTime),
           deal_description: h.dealDescription || null,
           confidence_score: h.confidence,
           source_url: venue.website,

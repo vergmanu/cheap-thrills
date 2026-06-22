@@ -56,18 +56,29 @@ function mapSupabaseVenueToVenue(venue: SupabaseVenue): Venue {
   const distanceMiles =
     Math.round((venue.distance_meters / 1609.34) * 10) / 10;
 
+  const validTime = (t: string | null): string | null => {
+    if (!t || !/^\d{1,2}:\d{2}$/.test(t)) return null;
+    return t;
+  };
+
   // Convert happy_hours rows to HappyHourWindow[]
   const happyHours = (venue.happy_hours ?? [])
     .filter((hh) => hh.confidence_score !== null && hh.confidence_score >= 0.7)
     .map((hh) => ({
       days: [hh.day_of_week ?? 'Unknown'].filter(Boolean),
-      startTime: hh.start_time ?? '00:00',
-      endTime: hh.end_time ?? '23:59',
+      startTime: validTime(hh.start_time) ?? '00:00',
+      endTime: validTime(hh.end_time) ?? '23:59',
     }));
 
-  // Convert deal_description to Deal[]
+  // Convert deal_description to Deal[], deduped by description
+  const seenDescriptions = new Set<string>();
   const deals = (venue.happy_hours ?? [])
     .filter((hh) => hh.deal_description && hh.confidence_score !== null && hh.confidence_score >= 0.7)
+    .filter((hh) => {
+      if (seenDescriptions.has(hh.deal_description!)) return false;
+      seenDescriptions.add(hh.deal_description!);
+      return true;
+    })
     .map((hh) => ({
       description: hh.deal_description ?? '',
       type: 'drinks' as const,
