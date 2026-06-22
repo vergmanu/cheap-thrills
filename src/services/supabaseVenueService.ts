@@ -5,6 +5,7 @@ import type {
   Venue,
 } from '../types/venue';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { isHappyHourActive } from '../utils/timeUtils';
 
 const PROXY_URL = '/api/venues';
 
@@ -108,7 +109,7 @@ function mapSupabaseVenueToVenue(venue: SupabaseVenue): Venue {
     happyHours,
     deals,
     dealTypes: dealTypes as ('drinks' | 'food')[],
-    isActiveNow: false,
+    isActiveNow: isHappyHourActive(happyHours),
     websiteUrl: venue.website ?? undefined,
     phoneNumber: venue.phone ?? undefined,
     mapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(

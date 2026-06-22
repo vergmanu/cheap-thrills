@@ -12,8 +12,6 @@
     "dev:api": "vercel dev"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.104.2",
-    "@google/generative-ai": "^0.24.1",
     "@mendable/firecrawl-js": "^4.27.0",
     "@supabase/supabase-js": "^2.108.0",
     "groq-sdk": "^1.2.1",
