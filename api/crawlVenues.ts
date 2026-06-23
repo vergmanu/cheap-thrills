@@ -6,6 +6,39 @@ import FirecrawlApp from '@mendable/firecrawl-js';
 // 60-second serverless timeout and Firecrawl's 2 concurrent request limit.
 const BATCH_SIZE = 10;
 
+// Nav links whose URL path looks like a dedicated happy-hour / specials page.
+const HH_URL_PATTERN = /happy.?hour|drink-?special|specials|fooddrinkmenu|deals/i;
+
+// Pick the best happy-hour subpage from a homepage's links.
+// Same-domain only; prefers explicit "happy hour" URLs over generic specials/menu.
+function findHappyHourSubpage(links: string[], homepage: string): string | null {
+  let host: string;
+  try {
+    host = new URL(homepage).hostname.replace(/^www\./, '');
+  } catch {
+    return null;
+  }
+
+  const candidates = links.filter((href) => {
+    try {
+      const u = new URL(href, homepage);
+      if (u.hostname.replace(/^www\./, '') !== host) return false;
+      return HH_URL_PATTERN.test(u.pathname);
+    } catch {
+      return false;
+    }
+  });
+
+  // Rank explicit happy-hour URLs ahead of generic specials/menu URLs.
+  candidates.sort((a, b) => {
+    const aScore = /happy.?hour/i.test(a) ? 0 : 1;
+    const bScore = /happy.?hour/i.test(b) ? 0 : 1;
+    return aScore - bScore;
+  });
+
+  return candidates[0] ?? null;
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const authHeader = req.headers['authorization'];
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -62,21 +95,48 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log(`Crawling: ${venue.name} — ${venue.website}`);
 
     try {
-      const scrapeResult = await firecrawl.scrape(venue.website, {
-        formats: ['markdown'],
-        onlyMainContent: true,
+      // Step 1 — scrape the homepage, also asking for links (no extra credit).
+      // onlyMainContent:false so the nav menu (and its happy-hour link) is captured
+      // in `home.links`; onlyMainContent:true strips the nav before link extraction.
+      const home = await firecrawl.scrape(venue.website, {
+        formats: ['markdown', 'links'],
+        onlyMainContent: false,
         timeout: 30000,
       });
 
-      if (!scrapeResult.markdown) {
+      if (!home.markdown) {
         throw new Error('Empty markdown returned');
+      }
+
+      let combinedMarkdown = home.markdown;
+
+      // Step 2 — if the nav links to a dedicated happy-hour page, scrape it too
+      // and merge it ahead of the homepage (authoritative source first).
+      const subUrl = findHappyHourSubpage(home.links ?? [], venue.website);
+      if (subUrl && subUrl !== venue.website) {
+        try {
+          console.log(`  Found happy-hour subpage: ${subUrl}`);
+          const sub = await firecrawl.scrape(subUrl, {
+            formats: ['markdown'],
+            onlyMainContent: true,
+            timeout: 30000,
+          });
+          if (sub.markdown) {
+            combinedMarkdown =
+              `## HAPPY HOUR PAGE (${subUrl})\n\n${sub.markdown}\n\n---\n\n` +
+              `## HOMEPAGE (${venue.website})\n\n${home.markdown}`;
+          }
+        } catch (subErr) {
+          const msg = subErr instanceof Error ? subErr.message : 'Unknown error';
+          console.warn(`  Subpage scrape failed (${subUrl}): ${msg} — using homepage only`);
+        }
       }
 
       await supabase
         .from('crawl_queue')
         .update({
           status: 'done',
-          raw_markdown: scrapeResult.markdown,
+          raw_markdown: combinedMarkdown,
           last_attempt_at: new Date().toISOString(),
         })
         .eq('id', row.id);

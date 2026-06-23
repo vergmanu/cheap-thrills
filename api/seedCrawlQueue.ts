@@ -6,7 +6,7 @@ const BOUNDS = {
   south: 34.05,
   west: -118.30,
   north: 34.16,
-  east: -118.10,
+  east: -118.18, // excludes Pasadena / South Pasadena; keeps NE LA + Echo Park + Silver Lake
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

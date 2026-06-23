@@ -157,11 +157,11 @@ const LA_BOUNDS = {
   south: 34.05,
   west: -118.30,
   north: 34.16,
-  east: -118.10,
+  east: -118.18, // excludes Pasadena / South Pasadena; keeps NE LA + Echo Park + Silver Lake
 };
 
 // OSM amenity tags for happy-hour-eligible venues
-const AMENITY_TAGS = ['bar', 'pub', 'restaurant', 'nightclub', 'biergarten'];
+const AMENITY_TAGS = ['bar', 'pub', 'restaurant', 'biergarten'];
 
 interface OsmTags {
   name?: string;
