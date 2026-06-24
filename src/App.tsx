@@ -111,12 +111,15 @@ function AppContent() {
 
       {state.view === 'landing' && (
         <main className="flex min-h-screen flex-col items-center justify-center px-4 py-16">
-          <h1 className="font-display text-5xl sm:text-6xl font-bold text-text-primary mb-3 text-center">
-            Cheap Thrills
-          </h1>
-          <p className="text-lg text-text-secondary mb-10 text-center max-w-md">
-            Find the best happy hours near you.
+          <p className="font-display italic text-sm text-text-secondary mb-2 tracking-wide">
+            Your neighborhood guide to
           </p>
+        <h1 className="font-display text-5xl font-bold text-text-primary mb-2">
+          Cheap Thrills
+        </h1>
+          <p className="font-display italic text-base text-text-secondary mb-8">
+          Happy Hour Finder
+        </p>
           <ZipCodeInput initialValue={zipCode} onSubmit={handleSearch} />
         </main>
       )}
