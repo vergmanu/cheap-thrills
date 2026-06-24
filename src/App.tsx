@@ -142,7 +142,7 @@ function AppContent() {
             <p className="mb-2 font-display text-sm italic tracking-wide text-text-secondary">
               Your neighborhood guide to
             </p>
-            <h1 className="text-6xl font-bold leading-[0.92] tracking-tight sm:text-7xl">
+            <h1 className="mb-10 text-6xl font-bold leading-[0.92] tracking-tight sm:text-7xl">
               <Wordmark />
             </h1>
             <ZipCodeInput initialValue={zipCode} onSubmit={handleSearch} />
