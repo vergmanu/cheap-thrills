@@ -15,8 +15,8 @@ export default {
         error: 'var(--color-error)',
       },
       fontFamily: {
-        display: ['"Playfair Display"', 'serif'],
-        sans: ['"DM Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Fraunces"', 'serif'],
+        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       animation: {
