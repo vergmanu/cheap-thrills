@@ -140,7 +140,7 @@ function AppContent() {
           <Marquee items={MARQUEE_ITEMS} />
           <main className="flex min-h-[calc(100vh-2.5rem)] flex-col items-center justify-center px-4 py-16 text-center">
             <p className="mb-2 font-display text-sm italic tracking-wide text-text-secondary">
-              Your neighborhood guide to
+              your neighborhood guide to
             </p>
             <h1 className="mb-10 text-6xl font-bold leading-[0.92] tracking-tight sm:text-7xl">
               <Wordmark />
