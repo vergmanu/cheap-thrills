@@ -25,36 +25,41 @@ export function ZipCodeInput({ initialValue = '', onSubmit }: ZipCodeInputProps)
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto">
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1">
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={5}
-            value={value}
-            onChange={(e) => {
-              const next = e.target.value.replace(/\D/g, '').slice(0, 5);
-              setValue(next);
-              if (error) setError(null);
-            }}
-            placeholder="Enter zip code"
-            aria-label="Zip code"
-            aria-invalid={error ? true : undefined}
-            className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-lg text-text-primary placeholder:text-text-secondary focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
-          />
-          {error && (
-            <p className="mt-2 text-sm text-error" role="alert">
-              {error}
-            </p>
-          )}
-        </div>
+      <div
+        className={[
+          'flex items-center gap-2 rounded-full border bg-surface pl-6 pr-1.5 py-1.5',
+          'shadow-glow transition duration-300',
+          'hover:-translate-y-px focus-within:-translate-y-0.5 focus-within:shadow-glow-lg',
+          error ? 'border-error' : 'border-accent-muted focus-within:border-accent',
+        ].join(' ')}
+      >
+        <input
+          type="text"
+          inputMode="numeric"
+          maxLength={5}
+          value={value}
+          onChange={(e) => {
+            const next = e.target.value.replace(/\D/g, '').slice(0, 5);
+            setValue(next);
+            if (error) setError(null);
+          }}
+          placeholder="Enter your zip code"
+          aria-label="Zip code"
+          aria-invalid={error ? true : undefined}
+          className="min-w-0 flex-1 bg-transparent py-2.5 text-lg text-text-primary placeholder:text-text-secondary focus:outline-none"
+        />
         <button
           type="submit"
-          className="rounded-lg bg-accent px-6 py-3 font-semibold text-bg transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
+          className="shrink-0 rounded-full bg-accent px-6 py-3 font-bold text-white shadow-[0_8px_18px_-6px_rgba(217,79,43,0.55)] transition hover:-translate-y-px hover:-rotate-1 hover:shadow-[0_12px_22px_-6px_rgba(217,79,43,0.65)] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
         >
-          Find Deals
+          Find Deals →
         </button>
       </div>
+      {error && (
+        <p className="mt-2 text-center text-sm text-error" role="alert">
+          {error}
+        </p>
+      )}
     </form>
   );
 }

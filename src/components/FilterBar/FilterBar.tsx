@@ -7,6 +7,7 @@ interface FilterBarProps {
   onDealFilterChange: (filter: DealTypeFilter) => void;
   onActiveOnlyChange: (active: boolean) => void;
   onSortChange: (sort: SortOption) => void;
+  onSurprise?: () => void;
 }
 
 const DEAL_OPTIONS: { value: DealTypeFilter; label: string }[] = [
@@ -29,17 +30,18 @@ export function FilterBar({
   onDealFilterChange,
   onActiveOnlyChange,
   onSortChange,
+  onSurprise,
 }: FilterBarProps) {
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-border bg-surface p-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-      <div className="flex flex-wrap gap-1 rounded-lg bg-bg p-1">
+    <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1.5">
         {DEAL_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             type="button"
             onClick={() => onDealFilterChange(opt.value)}
             className={[
-              'rounded-md px-3 py-1.5 text-sm font-medium transition',
+              'rounded-full px-4 py-2 text-sm font-semibold transition',
               dealFilter === opt.value
                 ? 'bg-accent text-bg'
                 : 'text-text-secondary hover:text-text-primary',
@@ -86,6 +88,16 @@ export function FilterBar({
             ))}
           </select>
         </label>
+
+        {onSurprise && (
+          <button
+            type="button"
+            onClick={onSurprise}
+            className="rounded-full border border-accent-muted bg-surface px-4 py-2.5 text-sm font-bold text-text-primary shadow-glow transition hover:-translate-y-px hover:shadow-glow-lg"
+          >
+            🎲 Surprise me
+          </button>
+        )}
       </div>
     </div>
   );

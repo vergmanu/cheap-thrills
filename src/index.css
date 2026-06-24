@@ -7,7 +7,7 @@
   --color-surface: #FDF8F0;
   --color-accent: #D94F2B;
   --color-accent-muted: #F5E6DF;
-  --color-text-primary: #2C1A0E;
+  --color-text-primary: #4A3526;
   --color-text-secondary: #8C6E5A;
   --color-success: #4A7C59;
   --color-border: #E8DDD0;
@@ -20,5 +20,26 @@
   }
   body {
     @apply min-h-screen bg-bg font-sans text-text-primary;
+    /* subtle paper grain so the cream reads like stock, not flat hex */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+  }
+}
+
+@layer components {
+  /* scrolling ticker strip */
+  .marquee {
+    @apply overflow-hidden whitespace-nowrap bg-accent text-bg;
+  }
+  .marquee-track {
+    @apply inline-block animate-marquee font-semibold uppercase;
+    letter-spacing: 0.18em;
+  }
+  .marquee-track > span {
+    @apply mx-5;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
   }
 }

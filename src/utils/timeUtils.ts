@@ -91,3 +91,38 @@ export function formatTimeRange(window: HappyHourWindow): string {
   const end = format12Hour(window.endTime);
   return `${days}  ${start} – ${end}`;
 }
+
+/**
+ * Minutes until the currently-active happy hour window ends, or null if none
+ * is active right now. Used to power the "ends in 42 min" countdown.
+ */
+export function minutesUntilEnd(windows: HappyHourWindow[]): number | null {
+  if (windows.length === 0) return null;
+
+  const now = new Date();
+  const today = DAY_LABELS[now.getDay()]!;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let soonest: number | null = null;
+  for (const window of windows) {
+    const activeDays = expandDayRange(window.days);
+    if (!activeDays.has(today)) continue;
+
+    const start = minutesSinceMidnight(window.startTime);
+    const end = minutesSinceMidnight(window.endTime);
+    if (currentMinutes >= start && currentMinutes < end) {
+      const remaining = end - currentMinutes;
+      if (soonest === null || remaining < soonest) soonest = remaining;
+    }
+  }
+  return soonest;
+}
+
+/** "ends in 42 min" / "ends in 1 hr" / "ends in 1 hr 5 min" */
+export function formatCountdown(minutes: number): string {
+  if (minutes < 60) return `ends in ${minutes} min`;
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  const hrLabel = `${hrs} hr`;
+  return mins === 0 ? `ends in ${hrLabel}` : `ends in ${hrLabel} ${mins} min`;
+}

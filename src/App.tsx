@@ -6,9 +6,28 @@ import { ResultsGrid } from './components/ResultsGrid';
 import { LoadingState } from './components/LoadingState';
 import { EmptyState } from './components/EmptyState';
 import { VenueDetail } from './components/VenueDetail';
+import { Marquee } from './components/Marquee';
+import { Squiggle } from './components/Squiggle';
 import { useZipCode } from './hooks/useZipCode';
 import { useHappyHours } from './hooks/useHappyHours';
 import { filterAndSortVenues } from './utils/filterSort';
+
+const MARQUEE_ITEMS = [
+  'Happy Hour',
+  'Cheap Thrills',
+  '2-for-1',
+  '$5 Wine',
+  'Dollar Oysters',
+  'Half-off Apps',
+];
+
+function Wordmark({ className = '' }: { className?: string }) {
+  return (
+    <span className={`font-display font-bold ${className}`}>
+      Cheap <span className="text-accent">Thrills</span>
+    </span>
+  );
+}
 
 function AppContent() {
   const { state, dispatch } = useAppContext();
@@ -77,6 +96,13 @@ function AppContent() {
     dispatch({ type: 'RESET_TO_LANDING' });
   };
 
+  const handleSurprise = () => {
+    if (filteredVenues.length === 0) return;
+    const pick =
+      filteredVenues[Math.floor(Math.random() * filteredVenues.length)];
+    if (pick) dispatch({ type: 'SELECT_VENUE', venue: pick });
+  };
+
   const showErrorBanner =
     (state.view === 'error' || error) && !state.dismissedError;
 
@@ -110,76 +136,86 @@ function AppContent() {
       )}
 
       {state.view === 'landing' && (
-        <main className="flex min-h-screen flex-col items-center justify-center px-4 py-16">
-          <p className="font-display italic text-sm text-text-secondary mb-2 tracking-wide">
-            Your neighborhood guide to
-          </p>
-        <h1 className="font-display text-5xl font-bold text-text-primary mb-2">
-          Cheap Thrills
-        </h1>
-          <p className="font-display italic text-base text-text-secondary mb-8">
-          Happy Hour Finder
-        </p>
-          <ZipCodeInput initialValue={zipCode} onSubmit={handleSearch} />
-        </main>
+        <>
+          <Marquee items={MARQUEE_ITEMS} />
+          <main className="flex min-h-[calc(100vh-2.5rem)] flex-col items-center justify-center px-4 py-16 text-center">
+            <p className="mb-2 font-display text-sm italic tracking-wide text-text-secondary">
+              Your neighborhood guide to
+            </p>
+            <h1 className="text-6xl font-bold leading-[0.92] tracking-tight sm:text-7xl">
+              <Wordmark />
+            </h1>
+            <ZipCodeInput initialValue={zipCode} onSubmit={handleSearch} />
+            <img
+              src="/illustrations/spread.png"
+              alt=""
+              className="mt-8 w-[360px] max-w-[90%]"
+            />
+            <Squiggle className="mt-6 w-52 text-accent" />
+          </main>
+        </>
       )}
 
       {state.view !== 'landing' && (
-        <main className="mx-auto max-w-5xl px-4 py-8">
-          <header className="mb-8">
-            <h1 className="font-display text-3xl font-bold text-text-primary">
-              Cheap Thrills
-            </h1>
-            <p className="text-text-secondary">Happy hours near {state.searchZip}</p>
+        <>
+          <header className="flex items-center justify-center border-b border-border px-4 py-5">
+            <Wordmark className="text-2xl" />
           </header>
 
-          {(state.view === 'results' || state.view === 'empty') && (
-            <div className="mb-6">
-              <FilterBar
-                dealFilter={state.dealFilter}
-                activeOnly={state.activeOnly}
-                sortBy={state.sortBy}
-                onDealFilterChange={(filter) =>
-                  dispatch({ type: 'SET_DEAL_FILTER', filter })
-                }
-                onActiveOnlyChange={(activeOnly) =>
-                  dispatch({ type: 'SET_ACTIVE_ONLY', activeOnly })
-                }
-                onSortChange={(sortBy) =>
-                  dispatch({ type: 'SET_SORT_BY', sortBy })
-                }
-              />
-            </div>
-          )}
+          <main className="mx-auto max-w-5xl px-4 py-8">
+            {(state.view === 'results' ||
+              (state.view === 'error' && venues.length > 0)) && (
+              <>
+                <h2 className="mb-6 font-display text-3xl font-bold">
+                  <span className="text-accent">
+                    {filteredVenues.length} happy{' '}
+                    {filteredVenues.length === 1 ? 'hour' : 'hours'}
+                  </span>{' '}
+                  near {state.searchZip}
+                  <button
+                    type="button"
+                    onClick={handleEditZip}
+                    aria-label="Edit zip code"
+                    className="ml-2 align-middle font-sans text-base font-semibold text-accent underline decoration-dotted underline-offset-4 hover:text-text-primary"
+                  >
+                    ✎ edit
+                  </button>
+                </h2>
 
-          {state.view === 'loading' && <LoadingState />}
+                <div className="mb-6">
+                  <FilterBar
+                    dealFilter={state.dealFilter}
+                    activeOnly={state.activeOnly}
+                    sortBy={state.sortBy}
+                    onDealFilterChange={(filter) =>
+                      dispatch({ type: 'SET_DEAL_FILTER', filter })
+                    }
+                    onActiveOnlyChange={(activeOnly) =>
+                      dispatch({ type: 'SET_ACTIVE_ONLY', activeOnly })
+                    }
+                    onSortChange={(sortBy) =>
+                      dispatch({ type: 'SET_SORT_BY', sortBy })
+                    }
+                    onSurprise={handleSurprise}
+                  />
+                </div>
 
-          {state.view === 'empty' && (
-            <EmptyState zipCode={state.searchZip} onTryAgain={() => refetch()} />
-          )}
+                <ResultsGrid
+                  venues={filteredVenues}
+                  onVenueClick={(venue) =>
+                    dispatch({ type: 'SELECT_VENUE', venue })
+                  }
+                />
+              </>
+            )}
 
-          {state.view === 'results' && (
-            <ResultsGrid
-              venues={filteredVenues}
-              zipCode={state.searchZip}
-              onVenueClick={(venue) =>
-                dispatch({ type: 'SELECT_VENUE', venue })
-              }
-              onEditZip={handleEditZip}
-            />
-          )}
+            {state.view === 'loading' && <LoadingState />}
 
-          {state.view === 'error' && !isLoading && venues.length > 0 && (
-            <ResultsGrid
-              venues={filteredVenues}
-              zipCode={state.searchZip}
-              onVenueClick={(venue) =>
-                dispatch({ type: 'SELECT_VENUE', venue })
-              }
-              onEditZip={handleEditZip}
-            />
-          )}
-        </main>
+            {state.view === 'empty' && (
+              <EmptyState zipCode={state.searchZip} onTryAgain={handleEditZip} />
+            )}
+          </main>
+        </>
       )}
 
       {state.selectedVenue && (

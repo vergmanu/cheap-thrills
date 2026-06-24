@@ -1,6 +1,7 @@
 import type { Venue } from '../../types/venue';
 import { formatDistanceMiles } from '../../utils/distanceUtils';
-import { formatTimeRange } from '../../utils/timeUtils';
+import { formatTimeRange, minutesUntilEnd, formatCountdown } from '../../utils/timeUtils';
+import { Squiggle } from '../Squiggle';
 
 interface VenueCardProps {
   venue: Venue;
@@ -12,6 +13,8 @@ export function VenueCard({ venue, onClick, animationIndex = 0 }: VenueCardProps
   const primaryWindow = venue.happyHours[0];
   const dealLine = venue.deals.map((d) => d.description).join(' · ');
   const timeLine = primaryWindow ? formatTimeRange(primaryWindow) : 'Hours not listed';
+
+  const remaining = venue.isActiveNow ? minutesUntilEnd(venue.happyHours) : null;
 
   return (
     <article
@@ -25,47 +28,47 @@ export function VenueCard({ venue, onClick, animationIndex = 0 }: VenueCardProps
         }
       }}
       className={[
-        'group cursor-pointer rounded-xl border border-border bg-surface p-5 transition',
-        'hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-lg hover:shadow-black/30',
+        'group relative cursor-pointer rounded-2xl border border-border bg-surface p-6 transition duration-200',
+        'hover:-translate-y-1 hover:-rotate-[0.5deg] hover:border-accent/40 hover:shadow-card',
         'focus:outline-none focus:ring-2 focus:ring-accent/50',
         'opacity-0 animate-fade-in',
         venue.isActiveNow ? 'border-l-4 border-l-accent' : '',
       ].join(' ')}
       style={{ animationDelay: `${animationIndex * 60}ms` }}
     >
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div>
-          {venue.isActiveNow && (
-            <span className="inline-block rounded-full bg-accent-muted px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-accent shadow-[0_0_12px_rgba(245,166,35,0.45)]">
-              Active Now
-            </span>
-          )}
-        </div>
-        <span className="shrink-0 text-sm text-text-secondary">
-          {formatDistanceMiles(venue.distanceMiles)}
+      {venue.isActiveNow && (
+        <span className="absolute -top-3 left-5 -rotate-[4deg] rounded-lg bg-accent px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-bg shadow-[2px_2px_0_rgba(0,0,0,0.12)]">
+          Active Now
         </span>
-      </div>
+      )}
 
-      <h3 className="font-display text-xl font-semibold text-text-primary mb-1">
+      <span className="absolute right-5 top-5 text-sm text-text-secondary">
+        {formatDistanceMiles(venue.distanceMiles)}
+      </span>
+
+      <h3 className="mt-1 mb-1 pr-14 font-display text-2xl font-semibold text-text-primary">
         {venue.name}
       </h3>
-      <p className="text-sm text-text-secondary mb-4">{venue.address}</p>
+      <p className="text-sm text-text-secondary mb-2">{venue.address}</p>
 
-      <div className="h-px bg-border mb-4" />
+      <Squiggle className="w-40 text-border" />
 
       {dealLine && (
-        <p className="text-sm text-text-primary mb-2">
+        <p className="mt-3 mb-1.5 text-sm text-text-primary">
           <span className="mr-1" aria-hidden>
-            🍺
+            🍷
           </span>
           {dealLine}
         </p>
       )}
-      <p className="font-mono text-xs text-text-secondary mb-4">
-        <span className="mr-1" aria-hidden>
-          🕐
-        </span>
+      <p className="mb-4 font-display text-sm italic text-text-secondary">
         {timeLine}
+        {remaining !== null && (
+          <span className="font-sans font-semibold not-italic text-success">
+            {' · '}
+            {formatCountdown(remaining)}
+          </span>
+        )}
       </p>
 
       <div className="flex items-center justify-between">
@@ -79,7 +82,7 @@ export function VenueCard({ venue, onClick, animationIndex = 0 }: VenueCardProps
             </span>
           ))}
         </div>
-        <span className="text-sm text-accent opacity-0 transition group-hover:opacity-100">
+        <span className="text-sm font-medium text-accent opacity-0 transition group-hover:opacity-100">
           → Details
         </span>
       </div>
