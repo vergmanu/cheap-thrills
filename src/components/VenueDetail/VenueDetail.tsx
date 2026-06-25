@@ -8,7 +8,27 @@ interface VenueDetailProps {
   onClose: () => void;
 }
 
+function buildShareText(venue: Venue): string {
+  const lines: string[] = [
+    `Check out ${venue.name} for happy hour! 🍻`,
+    `📍 ${venue.address}`,
+  ];
+  if (venue.happyHours.length > 0) {
+    lines.push(`⏰ ${venue.happyHours.map(formatTimeRange).join(', ')}`);
+  }
+  if (venue.deals.length > 0) {
+    lines.push(`🎉 ${venue.deals.map((d) => d.description).join(' · ')}`);
+  }
+  lines.push(`🗺️ ${venue.websiteUrl ?? venue.mapsUrl}`);
+  return lines.join('\n');
+}
+
 export function VenueDetail({ venue, onClose }: VenueDetailProps) {
+  const handleShare = async () => {
+    const text = buildShareText(venue);
+    await navigator.share({ title: venue.name, text });
+  };
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -130,6 +150,15 @@ export function VenueDetail({ venue, onClose }: VenueDetailProps) {
               <a href={`tel:${venue.phoneNumber}`} className="text-accent hover:underline">
                 {venue.phoneNumber}
               </a>
+            )}
+            {typeof navigator !== 'undefined' && !!navigator.share && (
+              <button
+                type="button"
+                onClick={handleShare}
+                className="sm:hidden mt-2 w-full rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+              >
+                Share via text 📤
+              </button>
             )}
           </section>
         </div>

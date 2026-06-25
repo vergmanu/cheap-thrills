@@ -32,8 +32,8 @@ export function FilterBar({
   onSurprise,
 }: FilterBarProps) {
   return (
-    <div className="flex w-full items-center justify-between rounded-full border border-border bg-surface px-2 py-1.5">
-      {/* Tab group — left side */}
+    <div className="flex w-full flex-col gap-1 rounded-2xl border border-border bg-surface px-2 py-1.5 sm:flex-row sm:items-center sm:justify-between sm:rounded-full">
+      {/* Tab group */}
       <div className="flex items-center gap-0.5">
         {DEAL_OPTIONS.map((opt) => (
           <button
@@ -52,8 +52,8 @@ export function FilterBar({
         ))}
       </div>
 
-      {/* Controls — right side */}
-      <div className="flex items-center gap-4 pr-2">
+      {/* Controls */}
+      <div className="flex items-center gap-4 px-2 pb-1 sm:px-0 sm:pb-0 sm:pr-2">
         {/* Active Now toggle */}
         <button
           type="button"
