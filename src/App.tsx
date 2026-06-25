@@ -13,12 +13,14 @@ import { useHappyHours } from './hooks/useHappyHours';
 import { filterAndSortVenues } from './utils/filterSort';
 
 const MARQUEE_ITEMS = [
-  'Happy Hour',
-  'Cheap Thrills',
-  '2-for-1',
-  '$5 Wine',
-  'Dollar Oysters',
-  'Half-off Apps',
+  'Highland Park',
+  'Eagle Rock',
+  'Glassell Park',
+  'Atwater Village',
+  'Cypress Park',
+  'El Sereno',
+  'Echo Park',
+  'Silver Lake',
 ];
 
 function Wordmark({ className = '' }: { className?: string }) {
@@ -139,13 +141,16 @@ function AppContent() {
         <>
           <Marquee items={MARQUEE_ITEMS} />
           <main className="flex min-h-[calc(100vh-2.5rem)] flex-col items-center justify-center px-4 py-16 text-center">
-            <p className="mb-2 font-display text-sm italic tracking-wide text-text-secondary">
-              your neighborhood guide to
-            </p>
-            <h1 className="mb-10 text-6xl font-bold leading-[0.92] tracking-tight sm:text-7xl">
+            <h1 className="mb-3 text-6xl font-bold leading-[0.92] tracking-tight sm:text-7xl">
               <Wordmark />
             </h1>
+            <p className="mb-10 font-display text-lg italic tracking-wide text-text-secondary">
+              your neighborhood guide to the best happy hours
+            </p>
             <ZipCodeInput initialValue={zipCode} onSubmit={handleSearch} />
+            <p className="mt-3 text-sm tracking-wide text-text-secondary">
+              try 90026 · 90039 · 90042
+            </p>
             <img
               src="/illustrations/spread.png"
               alt=""
