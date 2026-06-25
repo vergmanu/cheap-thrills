@@ -11,8 +11,8 @@ interface VenueDetailProps {
 function buildShareText(venue: Venue): string {
   const zip = venue.address.match(/\d{5}/)?.[0] ?? '';
   const deepLink = zip
-    ? `cheap-thrills.vercel.app/?zip=${zip}`
-    : `cheap-thrills.vercel.app`;
+    ? `https://cheap-thrills.vercel.app/?zip=${zip}`
+    : `https://cheap-thrills.vercel.app`;
 
   const lines: string[] = [
     `Check out ${venue.name} for happy hour! 🍻`,
