@@ -74,7 +74,7 @@ export function FilterBar({
       <div className="h-px bg-border w-full sm:hidden" />
 
       {/* Row 2 — Active Now + Surprise Me */}
-      <div className="flex items-center justify-start gap-4 px-1 sm:px-0 sm:pr-2 sm:justify-end">
+      <div className="flex items-center justify-center gap-4 px-1 sm:px-0 sm:pr-2 sm:justify-end">
 
         {/* Active Now toggle */}
         <button

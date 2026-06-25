@@ -9,17 +9,26 @@ interface VenueDetailProps {
 }
 
 function buildShareText(venue: Venue): string {
+  const zip = venue.address.match(/\d{5}/)?.[0] ?? '';
+  const deepLink = zip
+    ? `cheap-thrills.vercel.app/?zip=${zip}`
+    : `cheap-thrills.vercel.app`;
+
   const lines: string[] = [
     `Check out ${venue.name} for happy hour! 🍻`,
     `📍 ${venue.address}`,
   ];
+
   if (venue.happyHours.length > 0) {
     lines.push(`⏰ ${venue.happyHours.map(formatTimeRange).join(', ')}`);
   }
+
   if (venue.deals.length > 0) {
     lines.push(`🎉 ${venue.deals.map((d) => d.description).join(' · ')}`);
   }
-  lines.push(`🗺️ ${venue.websiteUrl ?? venue.mapsUrl}`);
+
+  lines.push(`\nFind more happy hours near you 👉 ${deepLink}`);
+
   return lines.join('\n');
 }
 
