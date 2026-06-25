@@ -109,7 +109,7 @@ export function FilterBar({
             onClick={onSurprise}
             className="text-sm font-semibold text-text-secondary transition hover:text-text-primary whitespace-nowrap"
           >
-            🎲 Surprise Me
+            Surprise Me 🎲
           </button>
         )}
 
