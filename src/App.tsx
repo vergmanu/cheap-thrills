@@ -33,7 +33,7 @@ function Wordmark({ className = '' }: { className?: string }) {
 
 function AppContent() {
   const { state, dispatch } = useAppContext();
-  const { zipCode, setZipCode } = useZipCode();
+  const { zipCode, setZipCode, clearZipCode } = useZipCode();
 
   const activeSearchZip =
     state.view === 'landing' ? '' : state.searchZip;
@@ -95,6 +95,7 @@ function AppContent() {
   };
 
   const handleEditZip = () => {
+    clearZipCode();
     dispatch({ type: 'RESET_TO_LANDING' });
   };
 
