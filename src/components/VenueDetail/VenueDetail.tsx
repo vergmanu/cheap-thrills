@@ -15,8 +15,8 @@ function buildShareText(venue: Venue): string {
     : `https://cheap-thrills.vercel.app`;
 
   const lines: string[] = [
-    `Check out ${venue.name} for happy hour! 🍻`,
-    `📍 ${venue.address}`,
+    `Check out ${venue.name} for happy hour!`,
+    `\n📍 ${venue.address}`,
   ];
 
   if (venue.happyHours.length > 0) {
@@ -27,7 +27,7 @@ function buildShareText(venue: Venue): string {
     lines.push(`🎉 ${venue.deals.map((d) => d.description).join(' · ')}`);
   }
 
-  lines.push(`\nFind more happy hours near you 👉 ${deepLink}`);
+  lines.push(`\nFind more happy hours near you: ${deepLink}`);
 
   return lines.join('\n');
 }
