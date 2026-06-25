@@ -94,6 +94,17 @@ function AppContent() {
     dispatch({ type: 'START_SEARCH' });
   };
 
+  // Auto-trigger search if zip came from URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const zipFromUrl = params.get('zip');
+    if (zipFromUrl && /^\d{5}$/.test(zipFromUrl) && state.view === 'landing') {
+      handleSearch(zipFromUrl);
+    }
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleEditZip = () => {
     clearZipCode();
     dispatch({ type: 'RESET_TO_LANDING' });
