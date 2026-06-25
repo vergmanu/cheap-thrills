@@ -33,32 +33,49 @@ export function FilterBar({
 }: FilterBarProps) {
   return (
     <div className="w-full rounded-2xl border border-border bg-surface px-3 py-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:rounded-full sm:px-2 sm:py-1.5 sm:gap-1">
-
-      {/* Row 1 — Deal type tabs */}
-      <div className="flex items-center gap-0.5 w-full sm:w-auto">
-        {DEAL_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => onDealFilterChange(opt.value)}
-            className={[
-              'flex-1 sm:flex-none rounded-full px-4 py-2 text-sm font-semibold transition text-center',
-              dealFilter === opt.value
-                ? 'bg-accent text-white'
-                : 'text-text-secondary hover:text-text-primary',
-            ].join(' ')}
+  
+      {/* Row 1 — Deal tabs + Sort dropdown */}
+      <div className="flex items-center justify-between gap-2 w-full sm:w-auto sm:justify-start">
+        <div className="flex items-center gap-0.5">
+          {DEAL_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onDealFilterChange(opt.value)}
+              className={[
+                'rounded-full px-4 py-2 text-sm font-semibold transition text-center',
+                dealFilter === opt.value
+                  ? 'bg-accent text-white'
+                  : 'text-text-secondary hover:text-text-primary',
+              ].join(' ')}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+  
+        {/* Sort dropdown — top right on mobile, hidden on desktop (moved to row 2) */}
+        <div className="flex items-center gap-1 rounded-full border border-border bg-bg px-4 py-1.5 sm:hidden">
+          <select
+            value={sortBy}
+            onChange={(e) => onSortChange(e.target.value as SortOption)}
+            className="bg-transparent text-sm font-semibold text-text-primary focus:outline-none cursor-pointer"
           >
-            {opt.label}
-          </button>
-        ))}
+            {SORT_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
-
+  
       {/* Divider — mobile only */}
       <div className="h-px bg-border w-full sm:hidden" />
-
-      {/* Row 2 — Secondary controls */}
-      <div className="flex items-center justify-between gap-3 px-1 sm:px-0 sm:pr-2 sm:justify-end">
-
+  
+      {/* Row 2 — Active Now + Surprise Me */}
+      <div className="flex items-center justify-start gap-4 px-1 sm:px-0 sm:pr-2 sm:justify-end">
+  
         {/* Active Now toggle */}
         <button
           type="button"
@@ -84,7 +101,7 @@ export function FilterBar({
             />
           </span>
         </button>
-
+  
         {/* Surprise Me */}
         {onSurprise && (
           <button
@@ -95,9 +112,9 @@ export function FilterBar({
             🎲 Surprise Me
           </button>
         )}
-
-        {/* Sort dropdown */}
-        <div className="flex items-center gap-1 rounded-full border border-border bg-bg px-4 py-1.5">
+  
+        {/* Sort dropdown — desktop only */}
+        <div className="hidden sm:flex items-center gap-1 rounded-full border border-border bg-bg px-4 py-1.5">
           <select
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value as SortOption)}
@@ -110,8 +127,7 @@ export function FilterBar({
             ))}
           </select>
         </div>
-
+  
       </div>
     </div>
   );
-}
