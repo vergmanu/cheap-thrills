@@ -32,16 +32,17 @@ export function FilterBar({
   onSurprise,
 }: FilterBarProps) {
   return (
-    <div className="flex w-full flex-col gap-1 rounded-2xl border border-border bg-surface px-2 py-1.5 sm:flex-row sm:items-center sm:justify-between sm:rounded-full">
-      {/* Tab group */}
-      <div className="flex items-center gap-0.5">
+    <div className="w-full rounded-2xl border border-border bg-surface px-3 py-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:rounded-full sm:px-2 sm:py-1.5 sm:gap-1">
+
+      {/* Row 1 — Deal type tabs */}
+      <div className="flex items-center gap-0.5 w-full sm:w-auto">
         {DEAL_OPTIONS.map((opt) => (
           <button
             key={opt.value}
             type="button"
             onClick={() => onDealFilterChange(opt.value)}
             className={[
-              'rounded-full px-4 py-2 text-sm font-semibold transition',
+              'flex-1 sm:flex-none rounded-full px-4 py-2 text-sm font-semibold transition text-center',
               dealFilter === opt.value
                 ? 'bg-accent text-white'
                 : 'text-text-secondary hover:text-text-primary',
@@ -52,17 +53,21 @@ export function FilterBar({
         ))}
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-4 px-2 pb-1 sm:px-0 sm:pb-0 sm:pr-2">
+      {/* Divider — mobile only */}
+      <div className="h-px bg-border w-full sm:hidden" />
+
+      {/* Row 2 — Secondary controls */}
+      <div className="flex items-center justify-between gap-3 px-1 sm:px-0 sm:pr-2 sm:justify-end">
+
         {/* Active Now toggle */}
         <button
           type="button"
           role="switch"
           aria-checked={activeOnly}
           onClick={() => onActiveOnlyChange(!activeOnly)}
-          className="flex cursor-pointer items-center gap-2 text-sm transition"
+          className="flex items-center gap-2 cursor-pointer transition"
         >
-          <span className={`text-sm font-semibold ${activeOnly ? 'text-text-primary' : 'text-text-secondary'}`}>
+          <span className={`text-sm font-semibold whitespace-nowrap ${activeOnly ? 'text-text-primary' : 'text-text-secondary'}`}>
             Active Now
           </span>
           <span
@@ -80,23 +85,23 @@ export function FilterBar({
           </span>
         </button>
 
-        {/* Surprise me */}
+        {/* Surprise Me */}
         {onSurprise && (
           <button
             type="button"
             onClick={onSurprise}
-            className="text-sm font-semibold text-text-secondary transition hover:text-text-primary"
+            className="text-sm font-semibold text-text-secondary transition hover:text-text-primary whitespace-nowrap"
           >
             🎲 Surprise Me
           </button>
         )}
 
-        {/* Sort — styled to match the screenshot pill */}
-        <div className="flex items-center gap-1 rounded-full border border-border bg-bg px-4 py-1.5 text-sm font-semibold text-text-primary">
+        {/* Sort dropdown */}
+        <div className="flex items-center gap-1 rounded-full border border-border bg-bg px-4 py-1.5">
           <select
             value={sortBy}
             onChange={(e) => onSortChange(e.target.value as SortOption)}
-            className="bg-transparent text-sm font-semibold focus:outline-none cursor-pointer"
+            className="bg-transparent text-sm font-semibold text-text-primary focus:outline-none cursor-pointer"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -105,6 +110,7 @@ export function FilterBar({
             ))}
           </select>
         </div>
+
       </div>
     </div>
   );
