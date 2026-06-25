@@ -145,7 +145,7 @@ function AppContent() {
               <Wordmark />
             </h1>
             <p className="mb-10 font-display text-lg italic tracking-wide text-text-secondary">
-              your neighborhood guide to the best happy hours
+              your LA neighborhood guide to the best happy hours
             </p>
             <ZipCodeInput initialValue={zipCode} onSubmit={handleSearch} />
             <p className="mt-3 text-sm tracking-wide text-text-secondary">
@@ -164,7 +164,14 @@ function AppContent() {
       {state.view !== 'landing' && (
         <>
           <header className="flex items-center justify-center border-b border-border px-4 py-5">
-            <Wordmark className="text-2xl" />
+            <button
+              type="button"
+              onClick={handleEditZip}
+              className="focus:outline-none"
+              aria-label="Back to home"
+            >
+              <Wordmark className="text-2xl" />
+            </button>
           </header>
 
           <main className="mx-auto max-w-5xl px-4 py-8">
